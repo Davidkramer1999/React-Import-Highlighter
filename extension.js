@@ -2,6 +2,7 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 
+// get dependencies from package.json
 class DependencyCache {
   constructor() {
     this.dependenciesCache = null;
@@ -20,18 +21,23 @@ class DependencyCache {
 
       try {
         if (fs.existsSync(packageJsonPath)) {
-          let packageJson = require(packageJsonPath);
+          // Use fs.readFileSync and JSON.parse instead of require
+          let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
           this.dependenciesCache = packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
         }
 
         if (!this.isWatcherSet) {
           fs.watchFile(packageJsonPath, (curr, prev) => {
-            // Invalidate the cache and directly populate it again
-            this.dependenciesCache = null;
-            let updatedPackageJson = require(packageJsonPath);
-            this.dependenciesCache = updatedPackageJson.dependencies
-              ? Object.keys(updatedPackageJson.dependencies)
-              : [];
+            // Read the updated package.json using fs.readFileSync
+            const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+
+            // Create a new dependencies array
+            const newDependencies = updatedPackageJson.dependencies ? Object.keys(updatedPackageJson.dependencies) : [];
+
+            // Compare the new dependencies with the cached ones
+            if (JSON.stringify(newDependencies) !== JSON.stringify(this.dependenciesCache)) {
+              this.dependenciesCache = newDependencies;
+            }
           });
           this.isWatcherSet = true;
         }
@@ -45,28 +51,27 @@ class DependencyCache {
 
 const dependencyCache = new DependencyCache();
 
+const importMatchRegex = /import {(.*?)} from ['"](.*?)['"]/g;
+const returnMatchRegex = /return\s*\(([\s\S]*?)\)\s*;/;
+
 //find return in file
 function extractImportedItemsFromContent(content, dependencies) {
   let importedItems = [];
-  let importMatches = content.match(/import {(.*?)} from ['"](.*?)['"]/g);
-
-  if (importMatches) {
-    importMatches.forEach((match) => {
-      let importMatch = /import {(.*?)} from ['"](.*?)['"]/.exec(match);
-      if (importMatch && importMatch[1]) {
-        importMatch[1].split(",").map((item) => {
-          item = item.trim();
-          if (dependencies.includes(importMatch[2])) {
-            importedItems.push(item);
-          }
-        });
-      }
-    });
+  let match;
+  while ((match = importMatchRegex.exec(content)) !== null) {
+    if (match[1]) {
+      match[1].split(",").forEach((item) => {
+        item = item.trim();
+        if (dependencies.includes(match[2])) {
+          importedItems.push(item);
+        }
+      });
+    }
   }
   return importedItems;
 }
 
-function findRangesOfDirectImportedItems(content, importedItems) {
+function findRangesImport(content, importedItems) {
   const ranges = [];
   const importedItemsSet = new Set(importedItems);
 
@@ -107,7 +112,7 @@ function findRangesOfDirectImportedItems(content, importedItems) {
   return ranges;
 }
 
-function findRangesOfImportedItemsInContent(content, importedItems, document) {
+function findRangeReturn(content, importedItems, document) {
   const ranges = [];
   const returnStartPosInDocument = document.getText().indexOf(content);
 
@@ -149,9 +154,9 @@ function findRangesOfImportedItemsInContent(content, importedItems, document) {
 }
 
 function extractReturnContent(fileContent) {
-  const returnMatch = fileContent.match(/return\s*\(([\s\S]*?)\)\s*;/);
-  if (returnMatch && returnMatch[1]) {
-    return returnMatch[1];
+  const match = returnMatchRegex.exec(fileContent);
+  if (match && match[1]) {
+    return match[1];
   }
   return "";
 }
@@ -159,7 +164,7 @@ function extractReturnContent(fileContent) {
 function checkImportsInFiles(dependencies) {
   let activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
-    return; // Exit if there's no active editor
+    return;
   }
 
   let document = activeEditor.document;
@@ -170,22 +175,32 @@ function checkImportsInFiles(dependencies) {
     isWholeLine: false,
   });
 
-  // Extract return content and imported items
-  let returnContent = extractReturnContent(content);
   let importedItems = extractImportedItemsFromContent(content, dependencies);
+  let combinedRanges = [];
 
-  // Find ranges for highlighting the imported items and return content
-  let returnRanges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
-  let importRanges = findRangesOfDirectImportedItems(content, importedItems);
-
-  // Combine both ranges and set decorations
-  const combinedRanges = [...returnRanges, ...importRanges];
+  combinedRanges = findAndHighlightAllRanges(content, importedItems, document);
 
   if (combinedRanges.length > 0) {
     activeEditor.setDecorations(highlightDecorationType, combinedRanges);
   }
 }
 
+function findAndHighlightAllRanges(content, importedItems, document) {
+  const ranges = [];
+
+  // First find ranges in the 'return' content
+  let returnContent = extractReturnContent(content);
+  const returnRanges = findRangeReturn(returnContent, importedItems, document);
+  ranges.push(...returnRanges);
+
+  // Then find ranges in the 'import' statements
+  const importRanges = findRangesImport(content, importedItems);
+  ranges.push(...importRanges);
+
+  return ranges;
+}
+
+//when opening a new file
 vscode.window.onDidChangeActiveTextEditor(() => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
   checkImportsInFiles(dependencies);
