@@ -2,19 +2,48 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 
-function getDependenciesFromPackageJson() {
-  let workspaceFolders = vscode.workspace.workspaceFolders;
-  if (workspaceFolders) {
-    let rootPath = workspaceFolders[0].uri.fsPath;
-    let packageJsonPath = path.join(rootPath, "package.json");
-
-    if (fs.existsSync(packageJsonPath)) {
-      let packageJson = require(packageJsonPath);
-      return packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
-    }
+class DependencyCache {
+  constructor() {
+    this.dependenciesCache = null;
+    this.isWatcherSet = false;
   }
-  return [];
+
+  getDependenciesFromPackageJson() {
+    if (this.dependenciesCache !== null) {
+      return this.dependenciesCache;
+    }
+
+    let workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders) {
+      let rootPath = workspaceFolders[0].uri.fsPath;
+      let packageJsonPath = path.join(rootPath, "package.json");
+
+      try {
+        if (fs.existsSync(packageJsonPath)) {
+          let packageJson = require(packageJsonPath);
+          this.dependenciesCache = packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
+        }
+
+        if (!this.isWatcherSet) {
+          fs.watchFile(packageJsonPath, (curr, prev) => {
+            // Invalidate the cache and directly populate it again
+            this.dependenciesCache = null;
+            let updatedPackageJson = require(packageJsonPath);
+            this.dependenciesCache = updatedPackageJson.dependencies
+              ? Object.keys(updatedPackageJson.dependencies)
+              : [];
+          });
+          this.isWatcherSet = true;
+        }
+      } catch (err) {
+        console.error(`An error occurred while reading package.json`);
+      }
+    }
+    return this.dependenciesCache;
+  }
 }
+
+const dependencyCache = new DependencyCache();
 
 function getJsFilesFromDirectory(directory) {
   let jsFiles = [];
@@ -146,10 +175,8 @@ function findRangesOfImportedItemsInContent(content, importedItems, document) {
 let fileDecorations = new Map();
 console.log(fileDecorations, "fileDecorations");
 
-vscode.window.onDidChangeActiveTextEditor((editor) => {
-  // Automatically check and highlight import statements
-  let dependencies = getDependenciesFromPackageJson();
-  console.log(dependencies, "dependencies");
+vscode.window.onDidChangeActiveTextEditor(() => {
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
   checkImportsInFiles(dependencies);
 });
 
@@ -210,15 +237,11 @@ function checkImportsInFiles(dependencies) {
 }
 
 function activate(context) {
-  console.log('Congratulations, your extension "liblinkerjs" is now active!');
-
-  // This will check for highlighted imports as soon as the extension is activated.
-  let dependencies = getDependenciesFromPackageJson();
+  let dependencies = dependencyCache.getDependenciesFromPackageJson();
   checkImportsInFiles(dependencies);
 
   let disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", () => {
-    dependencies = getDependenciesFromPackageJson();
-    console.log(dependencies, "dependencies");
+    dependencies = dependencyCache.getDependenciesFromPackageJson();
     checkImportsInFiles(dependencies);
   });
 
