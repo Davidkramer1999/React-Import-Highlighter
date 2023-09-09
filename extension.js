@@ -148,11 +148,6 @@ function findRangesOfImportedItemsInContent(content, importedItems, document) {
   return ranges;
 }
 
-vscode.window.onDidChangeActiveTextEditor(() => {
-  const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  checkImportsInFiles(dependencies);
-});
-
 function extractReturnContent(fileContent) {
   const returnMatch = fileContent.match(/return\s*\(([\s\S]*?)\)\s*;/);
   if (returnMatch && returnMatch[1]) {
@@ -175,18 +170,26 @@ function checkImportsInFiles(dependencies) {
     isWholeLine: false,
   });
 
+  // Extract return content and imported items
   let returnContent = extractReturnContent(content);
   let importedItems = extractImportedItemsFromContent(content, dependencies);
 
-  //return content
-  let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
-  //import  items
-  let ranges2 = findRangesOfDirectImportedItems(content, importedItems, document);
+  // Find ranges for highlighting the imported items and return content
+  let returnRanges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
+  let importRanges = findRangesOfDirectImportedItems(content, importedItems);
 
-  if (ranges.length > 0 || ranges2.length > 0) {
-    activeEditor.setDecorations(highlightDecorationType, [...ranges, ...ranges2]);
+  // Combine both ranges and set decorations
+  const combinedRanges = [...returnRanges, ...importRanges];
+
+  if (combinedRanges.length > 0) {
+    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
   }
 }
+
+vscode.window.onDidChangeActiveTextEditor(() => {
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
+  checkImportsInFiles(dependencies);
+});
 
 function activate(context) {
   let dependencies = dependencyCache.getDependenciesFromPackageJson();
