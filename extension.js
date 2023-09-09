@@ -66,95 +66,87 @@ function extractImportedItemsFromContent(content, dependencies) {
   return importedItems;
 }
 
-function findRangesOfDirectImportedItems(content, importedItems, document) {
-  let ranges = [];
+function findRangesOfDirectImportedItems(content, importedItems) {
+  const ranges = [];
+  const importedItemsSet = new Set(importedItems);
 
   // Break the content into lines.
   const lines = content.split("\n");
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+  lines.forEach((line, i) => {
+    const trimmedLine = line.trim();
 
     // Check if the line starts with "import".
-    if (line.startsWith("import")) {
-      const openBraceIndex = line.indexOf("{");
-      const closeBraceIndex = line.indexOf("}");
+    if (trimmedLine.startsWith("import")) {
+      const openBraceIndex = trimmedLine.indexOf("{");
+      const closeBraceIndex = trimmedLine.indexOf("}");
 
       // If we found an open brace and a close brace, tokenize the content between them.
       if (openBraceIndex !== -1 && closeBraceIndex !== -1) {
-        const tokens = line
+        const tokens = trimmedLine
           .substring(openBraceIndex + 1, closeBraceIndex)
           .split(",")
           .map((token) => token.trim());
 
-        tokens.forEach((token) => {
-          if (importedItems.includes(token)) {
+        tokens
+          .filter((token) => importedItemsSet.has(token))
+          .forEach((token) => {
             const tokenStart = line.indexOf(token);
             const tokenEnd = tokenStart + token.length;
 
             // Convert the line,column to a position in the document.
-            let startPos = document.positionAt(document.offsetAt(new vscode.Position(i, tokenStart)));
-            let endPos = document.positionAt(document.offsetAt(new vscode.Position(i, tokenEnd)));
+            const startPos = new vscode.Position(i, tokenStart);
+            const endPos = new vscode.Position(i, tokenEnd);
 
             ranges.push(new vscode.Range(startPos, endPos));
-          }
-        });
+          });
       }
-    }
-  }
-
-  return ranges;
-}
-
-function findRangesOfImportedItemsInContent(content, importedItems, document) {
-  let ranges = [];
-
-  // Find where the 'return' content starts in the original document.
-  const returnStartPosInDocument = document.getText().indexOf(content);
-
-  if (returnStartPosInDocument === -1) {
-    return ranges; // If content is not in the document, return the empty ranges array.
-  }
-
-  importedItems.forEach((item) => {
-    let openingTag = `<${item}`;
-    let selfClosingTag = `/>`;
-    let closingTag = `</${item}>`;
-
-    let start = content.indexOf(openingTag);
-    while (start !== -1) {
-      let endOfOpeningTag = content.indexOf(">", start);
-      if (endOfOpeningTag === -1) break; // malformed tag
-
-      if (content.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag) {
-        // It's a self-closing tag, so highlight the whole tag
-        let startPos = document.positionAt(returnStartPosInDocument + start);
-        let endPos = document.positionAt(returnStartPosInDocument + endOfOpeningTag);
-        ranges.push(new vscode.Range(startPos, endPos));
-      } else {
-        // It's an opening tag, so highlight the tag name
-        let startPos = document.positionAt(returnStartPosInDocument + start + 1); // +1 to skip '<'
-        let endPos = document.positionAt(returnStartPosInDocument + start + openingTag.length);
-        ranges.push(new vscode.Range(startPos, endPos));
-
-        // Find the corresponding closing tag and highlight the tag name
-        let closeStart = content.indexOf(closingTag, endOfOpeningTag);
-        if (closeStart !== -1) {
-          startPos = document.positionAt(returnStartPosInDocument + closeStart + 2); // +2 to skip '</'
-          endPos = document.positionAt(returnStartPosInDocument + closeStart + closingTag.length - 1); // -1 to exclude '>'
-          ranges.push(new vscode.Range(startPos, endPos));
-        }
-      }
-
-      // Move to the next occurrence
-      start = content.indexOf(openingTag, endOfOpeningTag);
     }
   });
 
   return ranges;
 }
 
-let fileDecorations = new Map();
+function findRangesOfImportedItemsInContent(content, importedItems, document) {
+  const ranges = [];
+  const returnStartPosInDocument = document.getText().indexOf(content);
+
+  if (returnStartPosInDocument === -1) return ranges;
+
+  importedItems.forEach((item) => {
+    const openingTag = `<${item}`;
+    const selfClosingTag = `/>`;
+    const closingTag = `</${item}>`;
+
+    let start = 0;
+
+    while ((start = content.indexOf(openingTag, start)) !== -1) {
+      const endOfOpeningTag = content.indexOf(">", start);
+      if (endOfOpeningTag === -1) break;
+
+      const isSelfClosing = content.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
+      const startPos = document.positionAt(returnStartPosInDocument + start + (isSelfClosing ? 0 : 1));
+      const endPos = document.positionAt(
+        returnStartPosInDocument + (isSelfClosing ? endOfOpeningTag : start + openingTag.length)
+      );
+
+      ranges.push(new vscode.Range(startPos, endPos));
+
+      if (!isSelfClosing) {
+        const closeStart = content.indexOf(closingTag, endOfOpeningTag);
+        if (closeStart !== -1) {
+          const startPos = document.positionAt(returnStartPosInDocument + closeStart + 2);
+          const endPos = document.positionAt(returnStartPosInDocument + closeStart + closingTag.length - 1);
+          ranges.push(new vscode.Range(startPos, endPos));
+        }
+      }
+
+      start = endOfOpeningTag;
+    }
+  });
+
+  return ranges;
+}
 
 vscode.window.onDidChangeActiveTextEditor(() => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
@@ -177,7 +169,6 @@ function checkImportsInFiles(dependencies) {
 
   let document = activeEditor.document;
   let content = document.getText();
-  let filePath = document.uri.fsPath;
 
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: "rgba(220,220,220,.35)",
@@ -189,12 +180,11 @@ function checkImportsInFiles(dependencies) {
 
   //return content
   let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
-  //imported items
+  //import  items
   let ranges2 = findRangesOfDirectImportedItems(content, importedItems, document);
 
   if (ranges.length > 0 || ranges2.length > 0) {
     activeEditor.setDecorations(highlightDecorationType, [...ranges, ...ranges2]);
-    fileDecorations.set(filePath, [...ranges, ...ranges2]); // Store the decorations
   }
 }
 
