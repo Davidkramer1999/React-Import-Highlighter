@@ -147,13 +147,10 @@ let fileDecorations = new Map();
 console.log(fileDecorations, "fileDecorations");
 
 vscode.window.onDidChangeActiveTextEditor((editor) => {
-  if (editor) {
-    const filePath = editor.document.uri.fsPath;
-    if (fileDecorations.has(filePath)) {
-      const decorations = fileDecorations.get(filePath);
-      editor.setDecorations(highlightDecorationType, decorations);
-    }
-  }
+  // Automatically check and highlight import statements
+  let dependencies = getDependenciesFromPackageJson();
+  console.log(dependencies, "dependencies");
+  checkImportsInFiles(dependencies);
 });
 
 function extractReturnContent(fileContent) {
@@ -207,10 +204,6 @@ function checkImportsInFiles(dependencies) {
           console.log("setDecorations", [...ranges, ...ranges2]);
           fileDecorations.set(filePath, [...ranges, ...ranges2]); // Store the decorations
         }
-      } else {
-        // If it's not open in an editor, we still store the decorations
-
-        fileDecorations.set(filePath, [...ranges, ...ranges2]);
       }
     });
   });
@@ -219,8 +212,12 @@ function checkImportsInFiles(dependencies) {
 function activate(context) {
   console.log('Congratulations, your extension "liblinkerjs" is now active!');
 
-  let disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", function () {
-    let dependencies = getDependenciesFromPackageJson();
+  // This will check for highlighted imports as soon as the extension is activated.
+  let dependencies = getDependenciesFromPackageJson();
+  checkImportsInFiles(dependencies);
+
+  let disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", () => {
+    dependencies = getDependenciesFromPackageJson();
     console.log(dependencies, "dependencies");
     checkImportsInFiles(dependencies);
   });
