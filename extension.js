@@ -34,7 +34,8 @@ function getJsFilesFromDirectory(directory) {
   return jsFiles;
 }
 
-function extractImportedItemsFromContent(content) {
+//find return in file
+function extractImportedItemsFromContent(content, dependencies) {
   let importedItems = [];
   let importMatches = content.match(/import {(.*?)} from ['"](.*?)['"]/g);
 
@@ -42,12 +43,56 @@ function extractImportedItemsFromContent(content) {
     importMatches.forEach((match) => {
       let importMatch = /import {(.*?)} from ['"](.*?)['"]/.exec(match);
       if (importMatch && importMatch[1]) {
-        importedItems.push(...importMatch[1].split(",").map((item) => item.trim()));
+        importMatch[1].split(",").map((item) => {
+          item = item.trim();
+          if (dependencies.includes(importMatch[2])) {
+            importedItems.push(item);
+          }
+        });
       }
     });
   }
-
   return importedItems;
+}
+
+function findRangesOfDirectImportedItems(content, importedItems, document) {
+  let ranges = [];
+
+  // Break the content into lines.
+  const lines = content.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Check if the line starts with "import".
+    if (line.startsWith("import")) {
+      const openBraceIndex = line.indexOf("{");
+      const closeBraceIndex = line.indexOf("}");
+
+      // If we found an open brace and a close brace, tokenize the content between them.
+      if (openBraceIndex !== -1 && closeBraceIndex !== -1) {
+        const tokens = line
+          .substring(openBraceIndex + 1, closeBraceIndex)
+          .split(",")
+          .map((token) => token.trim());
+
+        tokens.forEach((token) => {
+          if (importedItems.includes(token)) {
+            const tokenStart = line.indexOf(token);
+            const tokenEnd = tokenStart + token.length;
+
+            // Convert the line,column to a position in the document.
+            let startPos = document.positionAt(document.offsetAt(new vscode.Position(i, tokenStart)));
+            let endPos = document.positionAt(document.offsetAt(new vscode.Position(i, tokenEnd)));
+
+            ranges.push(new vscode.Range(startPos, endPos));
+          }
+        });
+      }
+    }
+  }
+
+  return ranges;
 }
 
 function findRangesOfImportedItemsInContent(content, importedItems, document) {
@@ -56,23 +101,60 @@ function findRangesOfImportedItemsInContent(content, importedItems, document) {
   // Find where the 'return' content starts in the original document.
   const returnStartPosInDocument = document.getText().indexOf(content);
 
+  if (returnStartPosInDocument === -1) {
+    return ranges; // If content is not in the document, return the empty ranges array.
+  }
+
   importedItems.forEach((item) => {
-    let itemUsageRegex = new RegExp(`<${item}[^>]*?(?:[^<]*?)<\/${item}>|<${item}[^>]*\/>`, "gs");
-    let match;
+    let openingTag = `<${item}`;
+    let selfClosingTag = `/>`;
+    let closingTag = `</${item}>`;
 
-    while ((match = itemUsageRegex.exec(content)) !== null) {
-      let start = returnStartPosInDocument + content.indexOf(match[0]);
-      let end = start + match[0].length;
+    let start = content.indexOf(openingTag);
+    while (start !== -1) {
+      let endOfOpeningTag = content.indexOf(">", start);
+      if (endOfOpeningTag === -1) break; // malformed tag
 
-      let startPos = document.positionAt(start);
-      let endPos = document.positionAt(end);
+      if (content.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag) {
+        // It's a self-closing tag, so highlight the whole tag
+        let startPos = document.positionAt(returnStartPosInDocument + start);
+        let endPos = document.positionAt(returnStartPosInDocument + endOfOpeningTag);
+        ranges.push(new vscode.Range(startPos, endPos));
+      } else {
+        // It's an opening tag, so highlight the tag name
+        let startPos = document.positionAt(returnStartPosInDocument + start + 1); // +1 to skip '<'
+        let endPos = document.positionAt(returnStartPosInDocument + start + openingTag.length);
+        ranges.push(new vscode.Range(startPos, endPos));
 
-      ranges.push(new vscode.Range(startPos, endPos));
+        // Find the corresponding closing tag and highlight the tag name
+        let closeStart = content.indexOf(closingTag, endOfOpeningTag);
+        if (closeStart !== -1) {
+          startPos = document.positionAt(returnStartPosInDocument + closeStart + 2); // +2 to skip '</'
+          endPos = document.positionAt(returnStartPosInDocument + closeStart + closingTag.length - 1); // -1 to exclude '>'
+          ranges.push(new vscode.Range(startPos, endPos));
+        }
+      }
+
+      // Move to the next occurrence
+      start = content.indexOf(openingTag, endOfOpeningTag);
     }
   });
 
   return ranges;
 }
+
+let fileDecorations = new Map();
+console.log(fileDecorations, "fileDecorations");
+
+vscode.window.onDidChangeActiveTextEditor((editor) => {
+  if (editor) {
+    const filePath = editor.document.uri.fsPath;
+    if (fileDecorations.has(filePath)) {
+      const decorations = fileDecorations.get(filePath);
+      editor.setDecorations(highlightDecorationType, decorations);
+    }
+  }
+});
 
 function extractReturnContent(fileContent) {
   const returnMatch = fileContent.match(/return\s*\(([\s\S]*?)\)\s*;/);
@@ -82,7 +164,7 @@ function extractReturnContent(fileContent) {
   return "";
 }
 
-function checkImportsInFiles() {
+function checkImportsInFiles(dependencies) {
   let workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) return;
 
@@ -99,7 +181,6 @@ function checkImportsInFiles() {
     return; // Exit if there's no active editor
   }
 
-  let document = activeEditor.document;
   let jsFiles = getJsFilesFromDirectory(srcPath);
 
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -108,15 +189,30 @@ function checkImportsInFiles() {
   });
 
   jsFiles.forEach((filePath) => {
-    let content = fs.readFileSync(filePath, "utf-8");
-    let returnContent = extractReturnContent(content);
-    let importedItems = extractImportedItemsFromContent(content);
-    let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
-    console.log(ranges, "ranges");
+    vscode.workspace.openTextDocument(filePath).then((document) => {
+      let content = fs.readFileSync(filePath, "utf-8");
+      let returnContent = extractReturnContent(content);
+      let importedItems = extractImportedItemsFromContent(content, dependencies);
 
-    if (ranges.length > 0) {
-      activeEditor.setDecorations(highlightDecorationType, ranges);
-    }
+      //return content
+      let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
+      //imported items
+      let ranges2 = findRangesOfDirectImportedItems(content, importedItems, document);
+
+      // Check if the document is currently open in an editor
+      const editor = vscode.window.visibleTextEditors.find((e) => e.document === document);
+      if (editor) {
+        if (ranges.length > 0 || ranges2.length > 0) {
+          editor.setDecorations(highlightDecorationType, [...ranges, ...ranges2]);
+          console.log("setDecorations", [...ranges, ...ranges2]);
+          fileDecorations.set(filePath, [...ranges, ...ranges2]); // Store the decorations
+        }
+      } else {
+        // If it's not open in an editor, we still store the decorations
+
+        fileDecorations.set(filePath, [...ranges, ...ranges2]);
+      }
+    });
   });
 }
 
@@ -126,7 +222,7 @@ function activate(context) {
   let disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", function () {
     let dependencies = getDependenciesFromPackageJson();
     console.log(dependencies, "dependencies");
-    checkImportsInFiles();
+    checkImportsInFiles(dependencies);
   });
 
   context.subscriptions.push(disposable);
