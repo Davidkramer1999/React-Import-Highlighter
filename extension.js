@@ -45,24 +45,6 @@ class DependencyCache {
 
 const dependencyCache = new DependencyCache();
 
-function getJsFilesFromDirectory(directory) {
-  let jsFiles = [];
-  let files = fs.readdirSync(directory);
-
-  for (let file of files) {
-    let fullPath = path.join(directory, file);
-    let stat = fs.statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      jsFiles = jsFiles.concat(getJsFilesFromDirectory(fullPath));
-    } else if (path.extname(file) === ".tsx" || path.extname(file) === ".js") {
-      jsFiles.push(fullPath);
-    }
-  }
-
-  return jsFiles;
-}
-
 //find return in file
 function extractImportedItemsFromContent(content, dependencies) {
   let importedItems = [];
@@ -173,7 +155,6 @@ function findRangesOfImportedItemsInContent(content, importedItems, document) {
 }
 
 let fileDecorations = new Map();
-console.log(fileDecorations, "fileDecorations");
 
 vscode.window.onDidChangeActiveTextEditor(() => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
@@ -189,51 +170,32 @@ function extractReturnContent(fileContent) {
 }
 
 function checkImportsInFiles(dependencies) {
-  let workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) return;
-
-  let rootPath = workspaceFolders[0].uri.fsPath;
-  let srcPath = path.join(rootPath, "src");
-
-  if (!fs.existsSync(srcPath)) {
-    vscode.window.showInformationMessage("Couldn't find a 'src' directory.");
-    return;
-  }
-
   let activeEditor = vscode.window.activeTextEditor;
   if (!activeEditor) {
     return; // Exit if there's no active editor
   }
 
-  let jsFiles = getJsFilesFromDirectory(srcPath);
+  let document = activeEditor.document;
+  let content = document.getText();
+  let filePath = document.uri.fsPath;
 
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: "rgba(220,220,220,.35)",
     isWholeLine: false,
   });
 
-  jsFiles.forEach((filePath) => {
-    vscode.workspace.openTextDocument(filePath).then((document) => {
-      let content = fs.readFileSync(filePath, "utf-8");
-      let returnContent = extractReturnContent(content);
-      let importedItems = extractImportedItemsFromContent(content, dependencies);
+  let returnContent = extractReturnContent(content);
+  let importedItems = extractImportedItemsFromContent(content, dependencies);
 
-      //return content
-      let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
-      //imported items
-      let ranges2 = findRangesOfDirectImportedItems(content, importedItems, document);
+  //return content
+  let ranges = findRangesOfImportedItemsInContent(returnContent, importedItems, document);
+  //imported items
+  let ranges2 = findRangesOfDirectImportedItems(content, importedItems, document);
 
-      // Check if the document is currently open in an editor
-      const editor = vscode.window.visibleTextEditors.find((e) => e.document === document);
-      if (editor) {
-        if (ranges.length > 0 || ranges2.length > 0) {
-          editor.setDecorations(highlightDecorationType, [...ranges, ...ranges2]);
-          console.log("setDecorations", [...ranges, ...ranges2]);
-          fileDecorations.set(filePath, [...ranges, ...ranges2]); // Store the decorations
-        }
-      }
-    });
-  });
+  if (ranges.length > 0 || ranges2.length > 0) {
+    activeEditor.setDecorations(highlightDecorationType, [...ranges, ...ranges2]);
+    fileDecorations.set(filePath, [...ranges, ...ranges2]); // Store the decorations
+  }
 }
 
 function activate(context) {
