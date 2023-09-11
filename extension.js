@@ -51,114 +51,104 @@ class DependencyCache {
 
 const dependencyCache = new DependencyCache();
 
-const importMatchRegex = /import {(.*?)} from ['"](.*?)['"]/g;
-const returnMatchRegex = /return\s*\(([\s\S]*?)\)\s*;/;
-
-//find return in file
-function extractImportedItemsFromContent(content, dependencies) {
-  let importedItems = [];
-  let match;
-  while ((match = importMatchRegex.exec(content)) !== null) {
-    if (match[1]) {
-      match[1].split(",").forEach((item) => {
-        item = item.trim();
-        if (dependencies.includes(match[2])) {
-          importedItems.push(item);
-        }
-      });
-    }
-  }
-  return importedItems;
-}
-
-function findRangesImport(content, importedItems) {
+function findAndHighlightImports(content, dependencies) {
+  const importedItems = [];
   const ranges = [];
-  const importedItemsSet = new Set(importedItems);
 
-  // Break the content into lines.
   const lines = content.split("\n");
 
   lines.forEach((line, i) => {
     const trimmedLine = line.trim();
 
-    // Check if the line starts with "import".
     if (trimmedLine.startsWith("import")) {
-      const openBraceIndex = trimmedLine.indexOf("{");
-      const closeBraceIndex = trimmedLine.indexOf("}");
+      const fromIndex = trimmedLine.indexOf("from");
+      if (fromIndex === -1) return;
 
-      // If we found an open brace and a close brace, tokenize the content between them.
-      if (openBraceIndex !== -1 && closeBraceIndex !== -1) {
-        const tokens = trimmedLine
-          .substring(openBraceIndex + 1, closeBraceIndex)
-          .split(",")
-          .map((token) => token.trim());
+      const dep = trimmedLine
+        .slice(fromIndex + 5)
+        .replace(/['"`;]/g, "")
+        .trim();
 
-        tokens
-          .filter((token) => importedItemsSet.has(token))
-          .forEach((token) => {
-            const tokenStart = line.indexOf(token);
-            const tokenEnd = tokenStart + token.length;
+      if (dependencies.includes(dep)) {
+        const openBraceIndex = trimmedLine.indexOf("{");
+        const closeBraceIndex = trimmedLine.indexOf("}");
 
-            // Convert the line,column to a position in the document.
-            const startPos = new vscode.Position(i, tokenStart);
-            const endPos = new vscode.Position(i, tokenEnd);
+        if (openBraceIndex !== -1 && closeBraceIndex !== -1) {
+          const items = trimmedLine.slice(openBraceIndex + 1, closeBraceIndex).split(",");
+
+          items.forEach((item) => {
+            const trimmedItem = item.trim();
+            importedItems.push(trimmedItem);
+
+            const itemStart = line.indexOf(trimmedItem);
+            const itemEnd = itemStart + trimmedItem.length;
+
+            const startPos = new vscode.Position(i, itemStart);
+            const endPos = new vscode.Position(i, itemEnd);
 
             ranges.push(new vscode.Range(startPos, endPos));
           });
+        }
       }
     }
   });
 
-  return ranges;
+  return { ranges, importedItems };
 }
 
-function findRangeReturn(content, importedItems, document) {
+function findAndHighlightReturn(content, dependencies) {
   const ranges = [];
-  const returnStartPosInDocument = document.getText().indexOf(content);
+  const returnKeyword = "return ";
+  const returnStartIndex = content.indexOf(returnKeyword);
 
-  if (returnStartPosInDocument === -1) return ranges;
+  if (returnStartIndex === -1) return ranges;
 
-  importedItems.forEach((item) => {
+  let remainingContent = content.slice(returnStartIndex + returnKeyword.length);
+  let lineIndex = content.substr(0, returnStartIndex).split("\n").length - 1;
+
+  dependencies.forEach((item) => {
     const openingTag = `<${item}`;
     const selfClosingTag = `/>`;
     const closingTag = `</${item}>`;
 
     let start = 0;
+    let offset = returnStartIndex + returnKeyword.length;
 
-    while ((start = content.indexOf(openingTag, start)) !== -1) {
-      const endOfOpeningTag = content.indexOf(">", start);
+    while ((start = remainingContent.indexOf(openingTag, start)) !== -1) {
+      const endOfOpeningTag = remainingContent.indexOf(">", start);
       if (endOfOpeningTag === -1) break;
 
-      const isSelfClosing = content.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
-      const startPos = document.positionAt(returnStartPosInDocument + start + (isSelfClosing ? 0 : 1));
-      const endPos = document.positionAt(
-        returnStartPosInDocument + (isSelfClosing ? endOfOpeningTag : start + openingTag.length)
-      );
+      const isSelfClosing = remainingContent.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
+
+      lineIndex += remainingContent.substr(0, start).split("\n").length - 1;
+      offset += start;
+
+      let lineContent = content.split("\n")[lineIndex];
+      let lineOffset = lineContent.indexOf(openingTag) + 1; // +1 to skip the '<'
+
+      let startPos = new vscode.Position(lineIndex, lineOffset);
+      let endPos = new vscode.Position(lineIndex, lineOffset + openingTag.length - 1); // -1 to also skip the '<'
 
       ranges.push(new vscode.Range(startPos, endPos));
 
       if (!isSelfClosing) {
-        const closeStart = content.indexOf(closingTag, endOfOpeningTag);
+        const closeStart = remainingContent.indexOf(closingTag, endOfOpeningTag);
         if (closeStart !== -1) {
-          const startPos = document.positionAt(returnStartPosInDocument + closeStart + 2);
-          const endPos = document.positionAt(returnStartPosInDocument + closeStart + closingTag.length - 1);
+          lineOffset = lineContent.indexOf(closingTag);
+          startPos = new vscode.Position(lineIndex, lineOffset + 2);
+          endPos = new vscode.Position(lineIndex, lineOffset + closingTag.length - 1);
+
           ranges.push(new vscode.Range(startPos, endPos));
         }
       }
 
-      start = endOfOpeningTag;
+      // Update remainingContent and reset start index
+      remainingContent = remainingContent.slice(endOfOpeningTag);
+      start = 0;
     }
   });
 
   return ranges;
-}
-
-function extractReturnContent(fileContent) {
-  const match = returnMatchRegex.exec(fileContent);
-  if (match && match[1]) {
-    return match[1];
-  }
-  return "";
 }
 
 function checkImportsInFiles(dependencies) {
@@ -175,29 +165,16 @@ function checkImportsInFiles(dependencies) {
     isWholeLine: false,
   });
 
-  let importedItems = extractImportedItemsFromContent(content, dependencies);
-  let combinedRanges = [];
+  const { ranges, importedItems } = findAndHighlightImports(content, dependencies);
 
-  combinedRanges = findAndHighlightAllRanges(content, importedItems, document);
+  const returnRanges = findAndHighlightReturn(content, importedItems);
+
+  // Combine both ranges arrays
+  const combinedRanges = [...ranges, ...returnRanges];
 
   if (combinedRanges.length > 0) {
     activeEditor.setDecorations(highlightDecorationType, combinedRanges);
   }
-}
-
-function findAndHighlightAllRanges(content, importedItems, document) {
-  const ranges = [];
-
-  // First find ranges in the 'return' content
-  let returnContent = extractReturnContent(content);
-  const returnRanges = findRangeReturn(returnContent, importedItems, document);
-  ranges.push(...returnRanges);
-
-  // Then find ranges in the 'import' statements
-  const importRanges = findRangesImport(content, importedItems);
-  ranges.push(...importRanges);
-
-  return ranges;
 }
 
 //when opening a new file
