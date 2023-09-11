@@ -4,51 +4,34 @@ const path = require("path");
 
 // get dependencies from package.json
 class DependencyCache {
-  constructor() {
-    this.dependenciesCache = null;
-    this.isWatcherSet = false;
-  }
+  dependenciesCache = null;
+  isWatcherSet = false;
 
-  getDependenciesFromPackageJson() {
-    if (this.dependenciesCache !== null) {
-      return this.dependenciesCache;
-    }
+  getDependenciesFromPackageJson = () => {
+    const { workspaceFolders } = vscode.workspace;
+    const rootPath = workspaceFolders?.[0]?.uri.fsPath;
 
-    let workspaceFolders = vscode.workspace.workspaceFolders;
-    if (workspaceFolders) {
-      let rootPath = workspaceFolders[0].uri.fsPath;
-      let packageJsonPath = path.join(rootPath, "package.json");
+    if (!rootPath) return this.dependenciesCache;
 
-      try {
-        if (fs.existsSync(packageJsonPath)) {
-          // Use fs.readFileSync and JSON.parse instead of require
-          let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-          this.dependenciesCache = packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
+    const packageJsonPath = path.join(rootPath, "package.json");
+    if (!fs.existsSync(packageJsonPath)) return this.dependenciesCache;
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    this.dependenciesCache = packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
+
+    if (!this.isWatcherSet) {
+      fs.watchFile(packageJsonPath, () => {
+        const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+        const newDependencies = Object.keys(updatedPackageJson.dependencies ?? {});
+        if (JSON.stringify(newDependencies) !== JSON.stringify(this.dependenciesCache)) {
+          this.dependenciesCache = newDependencies;
         }
-
-        if (!this.isWatcherSet) {
-          fs.watchFile(packageJsonPath, (curr, prev) => {
-            // Read the updated package.json using fs.readFileSync
-            const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-
-            // Create a new dependencies array
-            const newDependencies = updatedPackageJson.dependencies ? Object.keys(updatedPackageJson.dependencies) : [];
-
-            // Compare the new dependencies with the cached ones
-            if (JSON.stringify(newDependencies) !== JSON.stringify(this.dependenciesCache)) {
-              this.dependenciesCache = newDependencies;
-            }
-          });
-          this.isWatcherSet = true;
-        }
-      } catch (err) {
-        console.error(`An error occurred while reading package.json`);
-      }
+      });
+      this.isWatcherSet = true;
     }
     return this.dependenciesCache;
-  }
+  };
 }
-
 const dependencyCache = new DependencyCache();
 
 function findAndHighlightImports(content, dependencies) {
@@ -180,17 +163,18 @@ function checkImportsInFiles(dependencies) {
 //when opening a new file
 vscode.window.onDidChangeActiveTextEditor(() => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  checkImportsInFiles(dependencies);
+  if (dependencies) checkImportsInFiles(dependencies);
 });
 
-function activate(context) {
-  let dependencies = dependencyCache.getDependenciesFromPackageJson();
-  checkImportsInFiles(dependencies);
+const performCheck = () => {
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
+  if (dependencies) checkImportsInFiles(dependencies);
+};
 
-  let disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", () => {
-    dependencies = dependencyCache.getDependenciesFromPackageJson();
-    checkImportsInFiles(dependencies);
-  });
+function activate(context) {
+  performCheck();
+
+  const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck);
 
   context.subscriptions.push(disposable);
 }
