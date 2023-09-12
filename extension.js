@@ -40,7 +40,7 @@ const dependencyCache = new DependencyCache();
 
 function findAndHighlightImports(content, dependencies) {
   const importedItems = [];
-  const ranges = [];
+  const importRanges = [];
 
   const lines = content.split("\n");
 
@@ -73,14 +73,14 @@ function findAndHighlightImports(content, dependencies) {
             const startPos = new vscode.Position(i, itemStart);
             const endPos = new vscode.Position(i, itemEnd);
 
-            ranges.push(new vscode.Range(startPos, endPos));
+            importRanges.push(new vscode.Range(startPos, endPos));
           });
         }
       }
     }
   });
 
-  return { ranges, importedItems };
+  return { importRanges, importedItems };
 }
 
 function findAndHighlightReturn(content, dependencies) {
@@ -157,12 +157,17 @@ function checkImportsInFiles(dependencies) {
     isWholeLine: false,
   });
 
-  const { ranges, importedItems } = findAndHighlightImports(content, dependencies);
-
+  const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
   const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
-  console.log(usedItems);
+
+  //highlight only the imports that are used in return so we avoid highlighting unused imports and
+  //functions from external libraries
+  const filteredRanges = importRanges.filter((range, index) => {
+    return usedItems.includes(importedItems[index]);
+  });
+
   // Combine both ranges arrays
-  const combinedRanges = [...ranges, ...returnRanges];
+  const combinedRanges = [...filteredRanges, ...returnRanges];
 
   if (combinedRanges.length > 0) {
     activeEditor.setDecorations(highlightDecorationType, combinedRanges);
