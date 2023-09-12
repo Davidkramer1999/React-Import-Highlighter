@@ -131,13 +131,12 @@ function findAndHighlightReturn(content, dependencies) {
           }
         }
 
-        // Update remainingContent and reset start index
         remainingContent = remainingContent.slice(endOfOpeningTag);
         start = 0;
       }
     });
 
-    startIndex = returnStartIndex + 6; // Move the starting point for the next loop
+    startIndex = returnStartIndex + 6;
   }
 
   return { returnRanges, usedItems };
@@ -174,13 +173,99 @@ function checkImportsInFiles(dependencies) {
   }
 }
 
-//when opening a new file
+const processedFiles = new Set();
+
 vscode.window.onDidChangeActiveTextEditor(() => {
+  const activeEditor = vscode.window.activeTextEditor;
+  const activeFilePath = activeEditor?.document?.fileName;
+  const activeFileName = path.basename(activeFilePath);
+
+  console.log("Active Filename:", activeFileName);
+  console.log("Processed Files:", processedFiles);
+  console.log("Decorated inlucdes alreaday?:", processedFiles.has(activeFileName));
+
+  // If the file has already been processed, skip running the code
+  if (processedFiles.has(activeFileName)) {
+    return;
+  }
+
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
   if (dependencies) {
     checkImportsInFiles(dependencies);
   }
 });
+
+//when opening a new file
+vscode.window.tabGroups.onDidChangeTabGroups((event) => {
+  const activeTabGroup = vscode.window.tabGroups.activeTabGroup;
+  const isActive = activeTabGroup?.isActive;
+
+  if (isActive) {
+    const activeFileName = activeTabGroup?.activeTab?.label;
+
+    // Add the activeFileName to the processedFiles Set
+    if (activeFileName) {
+      processedFiles.add(activeFileName);
+    }
+
+    // Your code to apply decorations or any other operation
+  } else {
+    processedFiles.clear();
+  }
+});
+
+/*try {
+  vscode.window.tabGroups.onDidChangeTabGroups((event) => {
+    try {
+      console.log("Tab Groups changed:", event);
+      const activeTabGroup = vscode.window.tabGroups.activeTabGroup;
+      const activeEditor = activeTabGroup?.activeEditor;
+
+      // Get the URI or fileName from the activeEditor
+      const activeFileName = activeEditor?.document?.fileName;
+
+      console.log("Active Filename:", activeFileName);
+    } catch (innerError) {
+      console.error("Error in event handler:", innerError);
+    }
+  });
+} catch (error) {
+  console.error("Error setting up event listener:", error);
+}*/
+
+//const decoratedFiles = new Set();
+
+/*vscode.workspace.onDidChangeTabGroups(() => {
+  console.log("Active Filename:", activeFileName);
+  console.log("Decorated Files:", decoratedFiles);
+  const activeTabGroup = vscode.workspace.tabGroups.activeTabGroup;
+  const activeEditor = activeTabGroup?.activeEditor;
+  console.log("Active Filename:", activeFileName);
+  console.log("Decorated Files:", decoratedFiles);
+  // Get the URI or fileName from the activeEditor
+  const activeFileName = activeEditor?.document?.fileName;
+
+  if (activeFileName) {
+    if (decoratedFiles.has(activeFileName)) {
+      // The file is already decorated, do not reapply decorations
+      return;
+    }
+    // Apply your decorations
+    // applyDecorations(activeEditor);
+
+    // Add the file to the set of decorated files
+    decoratedFiles.add(activeFileName);
+  }
+});
+
+/*function applyDecorations(editor) {
+  if (editor) {
+    const dependencies = dependencyCache.getDependenciesFromPackageJson();
+    if (dependencies) {
+      checkImportsInFiles(dependencies);
+    }
+  }
+}*/
 
 const performCheck = () => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
@@ -190,8 +275,6 @@ const performCheck = () => {
 };
 
 function activate(context) {
-  performCheck();
-
   const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck);
 
   context.subscriptions.push(disposable);
