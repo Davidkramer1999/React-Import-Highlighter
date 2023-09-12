@@ -11,10 +11,14 @@ class DependencyCache {
     const { workspaceFolders } = vscode.workspace;
     const rootPath = workspaceFolders?.[0]?.uri.fsPath;
 
-    if (!rootPath) return this.dependenciesCache;
+    if (!rootPath) {
+      return this.dependenciesCache;
+    }
 
     const packageJsonPath = path.join(rootPath, "package.json");
-    if (!fs.existsSync(packageJsonPath)) return this.dependenciesCache;
+    if (!fs.existsSync(packageJsonPath)) {
+      return this.dependenciesCache;
+    }
 
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
     this.dependenciesCache = packageJson.dependencies ? Object.keys(packageJson.dependencies) : [];
@@ -80,58 +84,63 @@ function findAndHighlightImports(content, dependencies) {
 }
 
 function findAndHighlightReturn(content, dependencies) {
-  const ranges = [];
-  const returnKeyword = "return ";
-  const returnStartIndex = content.indexOf(returnKeyword);
+  const usedItems = [];
+  const returnRanges = [];
+  let startIndex = 0;
 
-  if (returnStartIndex === -1) return ranges;
+  while (true) {
+    const returnStartIndex = content.indexOf("return", startIndex);
 
-  let remainingContent = content.slice(returnStartIndex + returnKeyword.length);
-  let lineIndex = content.substr(0, returnStartIndex).split("\n").length - 1;
+    if (returnStartIndex === -1) break;
 
-  dependencies.forEach((item) => {
-    const openingTag = `<${item}`;
-    const selfClosingTag = `/>`;
-    const closingTag = `</${item}>`;
+    let remainingContent = content.slice(returnStartIndex + 6); // Skip 'return'
+    let lineIndex = content.substr(0, returnStartIndex).split("\n").length - 1;
 
-    let start = 0;
-    let offset = returnStartIndex + returnKeyword.length;
+    dependencies.forEach((item) => {
+      const openingTag = `<${item}`;
+      const selfClosingTag = `/>`;
+      const closingTag = `</${item}>`;
 
-    while ((start = remainingContent.indexOf(openingTag, start)) !== -1) {
-      const endOfOpeningTag = remainingContent.indexOf(">", start);
-      if (endOfOpeningTag === -1) break;
+      let start = 0;
 
-      const isSelfClosing = remainingContent.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
+      while ((start = remainingContent.indexOf(openingTag, start)) !== -1) {
+        const endOfOpeningTag = remainingContent.indexOf(">", start);
+        if (endOfOpeningTag === -1) break;
 
-      lineIndex += remainingContent.substr(0, start).split("\n").length - 1;
-      offset += start;
+        const isSelfClosing = remainingContent.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
 
-      let lineContent = content.split("\n")[lineIndex];
-      let lineOffset = lineContent.indexOf(openingTag) + 1; // +1 to skip the '<'
+        lineIndex += remainingContent.substr(0, start).split("\n").length - 1;
 
-      let startPos = new vscode.Position(lineIndex, lineOffset);
-      let endPos = new vscode.Position(lineIndex, lineOffset + openingTag.length - 1); // -1 to also skip the '<'
+        let lineContent = content.split("\n")[lineIndex];
+        let lineOffset = lineContent.indexOf(openingTag) + 1; // +1 to skip the '<'
 
-      ranges.push(new vscode.Range(startPos, endPos));
+        let startPos = new vscode.Position(lineIndex, lineOffset);
+        let endPos = new vscode.Position(lineIndex, lineOffset + openingTag.length - 1); // -1 to also skip the '<'
 
-      if (!isSelfClosing) {
-        const closeStart = remainingContent.indexOf(closingTag, endOfOpeningTag);
-        if (closeStart !== -1) {
-          lineOffset = lineContent.indexOf(closingTag);
-          startPos = new vscode.Position(lineIndex, lineOffset + 2);
-          endPos = new vscode.Position(lineIndex, lineOffset + closingTag.length - 1);
+        returnRanges.push(new vscode.Range(startPos, endPos));
+        usedItems.push(item); // Record the used item
 
-          ranges.push(new vscode.Range(startPos, endPos));
+        if (!isSelfClosing) {
+          const closeStart = remainingContent.indexOf(closingTag, endOfOpeningTag);
+          if (closeStart !== -1) {
+            lineOffset = lineContent.indexOf(closingTag);
+            startPos = new vscode.Position(lineIndex, lineOffset + 2);
+            endPos = new vscode.Position(lineIndex, lineOffset + closingTag.length - 1);
+
+            returnRanges.push(new vscode.Range(startPos, endPos));
+          }
         }
+
+        // Update remainingContent and reset start index
+        remainingContent = remainingContent.slice(endOfOpeningTag);
+        start = 0;
       }
+    });
 
-      // Update remainingContent and reset start index
-      remainingContent = remainingContent.slice(endOfOpeningTag);
-      start = 0;
-    }
-  });
+    startIndex = returnStartIndex + 6; // Move the starting point for the next loop
+  }
 
-  return ranges;
+  return { returnRanges, usedItems };
 }
 
 function checkImportsInFiles(dependencies) {
@@ -150,8 +159,8 @@ function checkImportsInFiles(dependencies) {
 
   const { ranges, importedItems } = findAndHighlightImports(content, dependencies);
 
-  const returnRanges = findAndHighlightReturn(content, importedItems);
-
+  const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
+  console.log(usedItems);
   // Combine both ranges arrays
   const combinedRanges = [...ranges, ...returnRanges];
 
@@ -163,12 +172,16 @@ function checkImportsInFiles(dependencies) {
 //when opening a new file
 vscode.window.onDidChangeActiveTextEditor(() => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  if (dependencies) checkImportsInFiles(dependencies);
+  if (dependencies) {
+    checkImportsInFiles(dependencies);
+  }
 });
 
 const performCheck = () => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  if (dependencies) checkImportsInFiles(dependencies);
+  if (dependencies) {
+    checkImportsInFiles(dependencies);
+  }
 };
 
 function activate(context) {
