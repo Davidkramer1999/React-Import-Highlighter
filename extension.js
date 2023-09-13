@@ -175,48 +175,42 @@ function checkImportsInFiles(dependencies) {
 
 let isScreenSplit = false;
 let files = [];
-let activeTabGroupsCount = 1;
+const SINGLE_TAB_GROUP = 1;
 
-const processActiveFile = () => {
-  console.log("Inside processActiveFile");
-  const fullFileName = vscode.window.activeTextEditor?.document.fileName;
-  const fileName = path.basename(fullFileName || '');
-
-  isScreenSplit = vscode.window.tabGroups.all.length > 1;
-
+const processDependencies = () => {
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
-
-  if (isScreenSplit && !files.includes(fileName)) {
-    files.push(fileName);
-    if (dependencies) {
-      checkImportsInFiles(dependencies);
-    }
-  } else if (!isScreenSplit && files.length === 0) {
-    if (dependencies) {
-      checkImportsInFiles(dependencies);
-      files = [];
-    }
+  if (dependencies) {
+    checkImportsInFiles(dependencies);
   }
 };
 
-vscode.window.onDidChangeActiveTextEditor((event) => {
-  console.log("onDidChangeActiveTextEditor Triggered");
+const processActiveFile = () => {
+  const fullFileName = vscode.window.activeTextEditor?.document.fileName;
+  const fileName = path.basename(fullFileName || '');
+
+  isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP;
+
+  if (isScreenSplit) {
+    if (!files.includes(fileName)) {
+      files.push(fileName);
+      processDependencies();
+    }
+  } else if (files.length === 0) {
+    files = [];
+    processDependencies();
+  }
+};
+
+vscode.window.onDidChangeActiveTextEditor(() => {
   processActiveFile();
 });
 
-vscode.window.tabGroups.onDidChangeTabGroups((event) => {
-  console.log("onDidChangeTabGroups Triggered");
-  isScreenSplit = true;
-  activeTabGroupsCount = vscode.window.tabGroups.all.length;
-
-  if (activeTabGroupsCount === 1) {
-    isScreenSplit = false;
+vscode.window.tabGroups.onDidChangeTabGroups(() => {
+  isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP;
+  if (vscode.window.tabGroups.all.length === SINGLE_TAB_GROUP) {
     files = [];
   }
 });
-
-
-
 
 const performCheck = () => {
   processActiveFile();
