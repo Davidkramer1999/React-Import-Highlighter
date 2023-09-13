@@ -175,35 +175,46 @@ function checkImportsInFiles(dependencies) {
 
 let isScreenSplit = false;
 let files = [];
-let activeTabGroupsCount = 1;  // Start with a single tab group by default
+let activeTabGroupsCount = 1;
 
-const processActiveFile = (fileName) => {
-  // Determine if the screen is split
+const processActiveFile = () => {
+  console.log("Inside processActiveFile");
+  const fullFileName = vscode.window.activeTextEditor?.document.fileName;
+  const fileName = path.basename(fullFileName || '');
+
   isScreenSplit = vscode.window.tabGroups.all.length > 1;
 
-  if (!files.includes(fileName)) {
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
+
+  if (isScreenSplit && !files.includes(fileName)) {
     files.push(fileName);
-    const dependencies = dependencyCache.getDependenciesFromPackageJson();
     if (dependencies) {
       checkImportsInFiles(dependencies);
+    }
+  } else if (!isScreenSplit && files.length === 0) {
+    if (dependencies) {
+      checkImportsInFiles(dependencies);
+      files = [];
     }
   }
 };
 
 vscode.window.onDidChangeActiveTextEditor((event) => {
-  const activeFileName = event.document.fileName;
-  processActiveFile(activeFileName);
+  console.log("onDidChangeActiveTextEditor Triggered");
+  processActiveFile();
 });
 
 vscode.window.tabGroups.onDidChangeTabGroups((event) => {
+  console.log("onDidChangeTabGroups Triggered");
   isScreenSplit = true;
   activeTabGroupsCount = vscode.window.tabGroups.all.length;
 
   if (activeTabGroupsCount === 1) {
-    files = [];
     isScreenSplit = false;
+    files = [];
   }
 });
+
 
 
 
