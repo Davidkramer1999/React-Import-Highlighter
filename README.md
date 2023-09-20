@@ -1,6 +1,6 @@
 # liblinkerjs README
 
-This is the README for your extension "liblinkerjs." This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
+This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
 
 ## Features
 
