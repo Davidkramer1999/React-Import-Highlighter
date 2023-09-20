@@ -10,12 +10,14 @@ class DependencyCache {
   getDependenciesFromPackageJson = () => {
     const { workspaceFolders } = vscode.workspace;
     const rootPath = workspaceFolders?.[0]?.uri.fsPath;
+    const config = vscode.workspace.getConfiguration('liblinkerjs');
+    const packageJsonRelativePath = config.get('packageJsonPath', './package.json');
 
     if (!rootPath) {
       return this.dependenciesCache;
     }
 
-    const packageJsonPath = path.join(rootPath, "package.json");
+    const packageJsonPath = path.join(rootPath, packageJsonRelativePath);
     if (!fs.existsSync(packageJsonPath)) {
       return this.dependenciesCache;
     }
@@ -154,11 +156,12 @@ const processDependencies = (activeEditor) => {
   const document = activeEditor.document;
   const content = document.getText();
 
+  const highlightColor = vscode.workspace.getConfiguration('liblinkerjs').get('highlightColor') || "rgba(220,220,220,.35)";
+
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: "rgba(220,220,220,.35)",
+    backgroundColor: highlightColor,
     isWholeLine: false,
   });
-
   const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
   const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
 
