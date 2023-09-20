@@ -1,7 +1,7 @@
 {
-  "name": "liblinkerjs",
-  "displayName": "LibLinkerJs",
-  "description": "",
+  "name": "react-import-highlighter",
+  "displayName": "React Import tHighlighter",
+  "description": "Highlights components imported from dependencies listed in package.json",
   "publisher": "DavidKramer",
   "version": "0.0.1",
   "engines": {
@@ -22,19 +22,19 @@
   "contributes": {
     "commands": [
       {
-        "command": "liblinkerjs.checkImports",
+        "command": "reactImportHighlighter.checkImports",
         "title": "Check Library Imports"
       }
     ],
     "configuration": {
-      "title": "LibLinkerJs",
+      "title": "reactImportHighlighter",
       "properties": {
-        "liblinkerjs.packageJsonPath": {
+        "reactImportHighlighter.packageJsonPath": {
           "type": "string",
           "default": "./package.json",
           "description": "Path to your package.json relative to the workspace root."
         },
-        "liblinkerjs.highlightColor": {
+        "reactImportHighlighter.highlightColor": {
           "type": "string",
           "default": "rgba(220,220,220,.35)",
           "description": "Customize the highlight color for dependencies."

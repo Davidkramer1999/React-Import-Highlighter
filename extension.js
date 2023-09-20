@@ -10,7 +10,7 @@ class DependencyCache {
   getDependenciesFromPackageJson = () => {
     const { workspaceFolders } = vscode.workspace;
     const rootPath = workspaceFolders?.[0]?.uri.fsPath;
-    const config = vscode.workspace.getConfiguration('liblinkerjs');
+    const config = vscode.workspace.getConfiguration('reactImportHighlighter');
     const packageJsonRelativePath = config.get('packageJsonPath', './package.json');
 
     if (!rootPath) {
@@ -156,7 +156,7 @@ const processDependencies = (activeEditor) => {
   const document = activeEditor.document;
   const content = document.getText();
 
-  const highlightColor = vscode.workspace.getConfiguration('liblinkerjs').get('highlightColor') || "rgba(220,220,220,.35)";
+  const highlightColor = vscode.workspace.getConfiguration('reactImportHighlighter').get('highlightColor') || "rgba(220,220,220,.35)";
 
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
     backgroundColor: highlightColor,
@@ -217,7 +217,7 @@ const performCheck = () => {
 };
 
 function activate(context) {
-  const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck);
+  const disposable = vscode.commands.registerCommand("reactImportHighlighter.checkImports", performCheck);
 
   context.subscriptions.push(disposable);
 }

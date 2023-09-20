@@ -1,4 +1,4 @@
-# liblinkerjs README
+# React Import Highlighter README
 
 This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
 
@@ -21,17 +21,29 @@ To use this extension, you need:
 
 This extension contributes the following settings:
 
-- `liblinkerjs.enable`: Enable/disable this extension.
-- `liblinkerjs.highlightColor`: Set the highlight color for unused imports.
+- `reactImportHighlighter.packageJsonPath`: Path to your `package.json` file relative to the workspace root. For example, if your `package.json` is in the root directory of your workspace, you can set this to `"./package.json"`.
+
+- `reactImportHighlighter.highlightColor`: Customize the highlight color for dependencies. The value should be in RGBA format, for example: `"rgba(255,0,0,.35)"`. This setting allows you to change the
 
 You can configure these settings in your Visual Studio Code settings.
 
+## Where to Add These Settings
+
+Inside the `settings.json` file in the `.vscode` folder, you can override default and user settings by adding:
+
+```json
+{
+  "reactImportHighlighter.packageJsonPath": "./package.json",
+  "reactImportHighlighter.highlightColor": "rgba(255,0,0,.35)"
+}
+```
+
 ## Release Notes
 
-Stay updated with the latest changes and improvements in liblinkerjs.
+Stay updated with the latest changes and improvements in React Import Highlighter.
 
 ### 1.0.0
 
-- Initial release of liblinkerjs, focused on React development.
+- Initial release of React Import Highlighter, focused on React development.
 
-**Enjoy React development with liblinkerjs!**
+**Enjoy React development with React Import Highlighter!**
