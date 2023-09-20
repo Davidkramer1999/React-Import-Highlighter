@@ -209,7 +209,7 @@ const performCheck = () => {
   if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
     handleVisibleTextEditors(vscode.window.visibleTextEditors);
   } else {
-    processDependencies();
+    processDependencies(vscode.window.activeTextEditor);
   }
 };
 
