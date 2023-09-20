@@ -2,9 +2,14 @@
   "name": "liblinkerjs",
   "displayName": "LibLinkerJs",
   "description": "",
+  "publisher": "DavidKramer",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.81.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Davidkramer1999/liblinkerjs-extension"
   },
   "categories": [
     "Other"
