@@ -142,65 +142,30 @@ function findAndHighlightReturn(content, dependencies) {
   return { returnRanges, usedItems };
 }
 
-function checkImportsInFiles(dependencies) {
-  let activeEditor = vscode.window.activeTextEditor;
-  if (!activeEditor) {
-    return;
-  }
-
-  let document = activeEditor.document;
-  let content = document.getText();
-
-  let highlightDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: "rgba(220,220,220,.35)",
-    isWholeLine: false,
-  });
-
-  const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
-  const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
-
-  //highlight only the imports that are used in return so we avoid highlighting unused imports and
-  //functions from external libraries
-  const filteredRanges = importRanges.filter((range, index) => {
-    return usedItems.includes(importedItems[index]);
-  });
-
-  // Combine both ranges arrays
-  const combinedRanges = [...filteredRanges, ...returnRanges];
-
-  if (combinedRanges.length > 0) {
-    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
-  }
-}
-
-let processedFiles = new Set();
-let isScreenSplit = false;
-const SINGLE_TAB_GROUP = 1;
-
-let currentActiveTabs = []
-let rightSide = ""
 
 
-let previousScreen
 
 const processDependencies = (openedEditorFileName) => {
   console.log(openedEditorFileName, "processDependencies");
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
 
   if (!dependencies) return;
-  console.log("how many times");
 
-  const visibleEditors = vscode.window.visibleTextEditors;
+  // Get the active editor if openedEditorFileName is not provided
+  let activeEditor = vscode.window.activeTextEditor;
 
-  // Filter the editor by the file name
-  const targetEditor = visibleEditors.find(editor =>
-    editor.document.fileName.split('\\').pop() === openedEditorFileName
-  );
+  if (openedEditorFileName) {
+    console.log("openedEditorFileName", openedEditorFileName);
+    // Filter visible editors by the file name
+    activeEditor = vscode.window.visibleTextEditors.find(editor =>
+      editor.document.fileName.split('\\').pop() === openedEditorFileName
+    );
+  }
 
-  // If the editor is not found, return
-  if (!targetEditor) return;
+  // If no editor is found, return
+  if (!activeEditor) return;
 
-  const document = targetEditor.document;
+  const document = activeEditor.document;
   const content = document.getText();
 
   let highlightDecorationType = vscode.window.createTextEditorDecorationType({
@@ -218,67 +183,42 @@ const processDependencies = (openedEditorFileName) => {
   const combinedRanges = [...filteredRanges, ...returnRanges];
 
   if (combinedRanges.length > 0) {
-    targetEditor.setDecorations(highlightDecorationType, combinedRanges);
+    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
   }
 };
 
 
-
-const processActiveFile = () => {
-}
-
-
-vscode.window.onDidChangeActiveTextEditor(() => {
-  if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
-    processActiveFile();
-  }
-  //else {
-  //  processDependencies();
-  //}
-
-});
-
-function extractFileNames(paths) {
-  return paths.map((path) => {
-    const parts = path.split('\\');
-    return parts[parts.length - 1];
-  });
-}
-
 let previouslyActiveEditors = new Set();
 
 vscode.window.onDidChangeVisibleTextEditors((editors) => {
-  // Get the current visible editor file names
+  handleVisibleTextEditors(editors);
+});
+
+function handleVisibleTextEditors(editors) {
   const currentEditorNames = editors.map(editor => editor.document.fileName.split('\\').pop());
-
-  // Convert to a Set for easier comparison
   const currentEditorSet = new Set(currentEditorNames);
-
-  // Log for debugging
-  console.log(currentEditorSet, 'currentEditorSet');
-  console.log(previouslyActiveEditors, 'previouslyActiveEditors');
-
-  // Find editors that are no longer visible and remove them from previouslyActiveEditors
   for (let name of previouslyActiveEditors) {
     if (!currentEditorSet.has(name)) {
       previouslyActiveEditors.delete(name);
     }
   }
 
-  // Find new editors that were not previously active and mark them
   for (let name of currentEditorSet) {
     if (!previouslyActiveEditors.has(name)) {
-      // This editor was not active before, so apply decoration
       processDependencies(name);
-
-      // Now, mark this editor as previously active
       previouslyActiveEditors.add(name);
     }
   }
-});
+}
+
+const SINGLE_TAB_GROUP = 1;
 
 const performCheck = () => {
-  // processDependencies();
+  if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
+    handleVisibleTextEditors(vscode.window.visibleTextEditors);
+  } else {
+    processDependencies();
+  }
 };
 
 function activate(context) {
