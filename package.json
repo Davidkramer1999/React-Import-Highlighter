@@ -10,15 +10,18 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:liblinkerjs.checkImports"
-],
-"main": "./extension.js",
-"contributes": {
-    "commands": [{
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
         "command": "liblinkerjs.checkImports",
         "title": "Check Library Imports"
-    }]
-},
+      }
+    ]
+  },
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
