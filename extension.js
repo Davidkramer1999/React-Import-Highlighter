@@ -173,47 +173,112 @@ function checkImportsInFiles(dependencies) {
   }
 }
 
+let processedFiles = new Set();
 let isScreenSplit = false;
-let files = [];
 const SINGLE_TAB_GROUP = 1;
 
-const processDependencies = () => {
+let currentActiveTabs = []
+let rightSide = ""
+
+
+let previousScreen
+
+const processDependencies = (openedEditorFileName) => {
+  console.log(openedEditorFileName, "processDependencies");
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  if (dependencies) {
-    checkImportsInFiles(dependencies);
+
+  if (!dependencies) return;
+  console.log("how many times");
+
+  const visibleEditors = vscode.window.visibleTextEditors;
+
+  // Filter the editor by the file name
+  const targetEditor = visibleEditors.find(editor =>
+    editor.document.fileName.split('\\').pop() === openedEditorFileName
+  );
+
+  // If the editor is not found, return
+  if (!targetEditor) return;
+
+  const document = targetEditor.document;
+  const content = document.getText();
+
+  let highlightDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: "rgba(220,220,220,.35)",
+    isWholeLine: false,
+  });
+
+  const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
+  const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
+
+  const filteredRanges = importRanges.filter((range, index) => {
+    return usedItems.includes(importedItems[index]);
+  });
+
+  const combinedRanges = [...filteredRanges, ...returnRanges];
+
+  if (combinedRanges.length > 0) {
+    targetEditor.setDecorations(highlightDecorationType, combinedRanges);
   }
 };
+
+
 
 const processActiveFile = () => {
-  const fullFileName = vscode.window.activeTextEditor?.document.fileName;
-  const fileName = path.basename(fullFileName || '');
+}
 
-  isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP;
-
-  if (isScreenSplit) {
-    if (!files.includes(fileName)) {
-      files.push(fileName);
-      processDependencies();
-    }
-  } else if (files.length === 0) {
-    files = [];
-    processDependencies();
-  }
-};
 
 vscode.window.onDidChangeActiveTextEditor(() => {
-  processActiveFile();
+  if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
+    processActiveFile();
+  }
+  //else {
+  //  processDependencies();
+  //}
+
 });
 
-vscode.window.tabGroups.onDidChangeTabGroups(() => {
-  isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP;
-  if (vscode.window.tabGroups.all.length === SINGLE_TAB_GROUP) {
-    files = [];
+function extractFileNames(paths) {
+  return paths.map((path) => {
+    const parts = path.split('\\');
+    return parts[parts.length - 1];
+  });
+}
+
+let previouslyActiveEditors = new Set();
+
+vscode.window.onDidChangeVisibleTextEditors((editors) => {
+  // Get the current visible editor file names
+  const currentEditorNames = editors.map(editor => editor.document.fileName.split('\\').pop());
+
+  // Convert to a Set for easier comparison
+  const currentEditorSet = new Set(currentEditorNames);
+
+  // Log for debugging
+  console.log(currentEditorSet, 'currentEditorSet');
+  console.log(previouslyActiveEditors, 'previouslyActiveEditors');
+
+  // Find editors that are no longer visible and remove them from previouslyActiveEditors
+  for (let name of previouslyActiveEditors) {
+    if (!currentEditorSet.has(name)) {
+      previouslyActiveEditors.delete(name);
+    }
+  }
+
+  // Find new editors that were not previously active and mark them
+  for (let name of currentEditorSet) {
+    if (!previouslyActiveEditors.has(name)) {
+      // This editor was not active before, so apply decoration
+      processDependencies(name);
+
+      // Now, mark this editor as previously active
+      previouslyActiveEditors.add(name);
+    }
   }
 });
 
 const performCheck = () => {
-  processActiveFile();
+  // processDependencies();
 };
 
 function activate(context) {
