@@ -145,25 +145,11 @@ function findAndHighlightReturn(content, dependencies) {
 
 
 
-const processDependencies = (openedEditorFileName) => {
-  console.log(openedEditorFileName, "processDependencies");
-  const dependencies = dependencyCache.getDependenciesFromPackageJson();
-
-  if (!dependencies) return;
-
-  // Get the active editor if openedEditorFileName is not provided
-  let activeEditor = vscode.window.activeTextEditor;
-
-  if (openedEditorFileName) {
-    console.log("openedEditorFileName", openedEditorFileName);
-    // Filter visible editors by the file name
-    activeEditor = vscode.window.visibleTextEditors.find(editor =>
-      editor.document.fileName.split('\\').pop() === openedEditorFileName
-    );
-  }
-
-  // If no editor is found, return
+const processDependencies = (activeEditor) => {
   if (!activeEditor) return;
+
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
+  if (!dependencies) return;
 
   const document = activeEditor.document;
   const content = document.getText();
@@ -188,6 +174,7 @@ const processDependencies = (openedEditorFileName) => {
 };
 
 
+
 let previouslyActiveEditors = new Set();
 
 vscode.window.onDidChangeVisibleTextEditors((editors) => {
@@ -195,21 +182,26 @@ vscode.window.onDidChangeVisibleTextEditors((editors) => {
 });
 
 function handleVisibleTextEditors(editors) {
-  const currentEditorNames = editors.map(editor => editor.document.fileName.split('\\').pop());
-  const currentEditorSet = new Set(currentEditorNames);
+  // Create a Set of current visible editors by their file names
+  const currentEditorSet = new Set(editors.map(editor => editor.document.fileName.split('\\').pop()));
+
+  // Remove editors that are no longer visible from the set of previously active editors
   for (let name of previouslyActiveEditors) {
     if (!currentEditorSet.has(name)) {
       previouslyActiveEditors.delete(name);
     }
   }
 
-  for (let name of currentEditorSet) {
-    if (!previouslyActiveEditors.has(name)) {
-      processDependencies(name);
-      previouslyActiveEditors.add(name);
+  // Process new editors that were not previously active
+  for (let editor of editors) {
+    const fileName = editor.document.fileName.split('\\').pop();
+    if (!previouslyActiveEditors.has(fileName)) {
+      processDependencies(editor);  // Pass the entire editor object
+      previouslyActiveEditors.add(fileName);
     }
   }
 }
+
 
 const SINGLE_TAB_GROUP = 1;
 
