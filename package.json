@@ -1,9 +1,10 @@
 {
   "name": "react-import-highlighter",
-  "displayName": "React Import tHighlighter",
-  "description": "Highlights components imported from dependencies listed in package.json",
+  "displayName": "React Import Highlighter",
+  "description": "Highlights components imported from dependencies",
   "publisher": "DavidKramer",
   "version": "0.0.2",
+  "icon": "./images/react-import-highlighter.jpg",
   "engines": {
     "vscode": "^1.81.0"
   },
