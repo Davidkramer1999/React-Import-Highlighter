@@ -48,7 +48,6 @@ function findAndHighlightImports(content, dependencies) {
 
   lines.forEach((line, i) => {
     const trimmedLine = line.trim();
-
     if (trimmedLine.startsWith("import")) {
       const fromIndex = trimmedLine.indexOf("from");
       if (fromIndex === -1) return;
@@ -145,7 +144,7 @@ function findAndHighlightReturn(content, dependencies) {
 }
 
 
-
+let usedItemsOnInitial = new Set();
 
 const processDependencies = (activeEditor) => {
   if (!activeEditor) return;
@@ -165,6 +164,10 @@ const processDependencies = (activeEditor) => {
   const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
   const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
 
+  usedItemsOnInitial = new Set([...usedItems]);
+
+  console.log("usedItems", usedItemsOnInitial);
+
   const filteredRanges = importRanges.filter((range, index) => {
     return usedItems.includes(importedItems[index]);
   });
@@ -177,12 +180,81 @@ const processDependencies = (activeEditor) => {
 };
 
 
+const processDependenciesOnSave = (activeEditor, newContentArray) => {
+  if (!activeEditor || !newContentArray || newContentArray.length === 0) return;
+  console.log(newContentArray, "newContentArray");
+
+  // No need to join the content into a single string; you're processing line by line
+  // const newContent = newContentArray.map(line => line.trim()).join(' ');
+
+  const dependencies = dependencyCache.getDependenciesFromPackageJson();
+  if (!dependencies) return;
+
+  const highlightColor = vscode.workspace.getConfiguration('reactImportHighlighter').get('highlightColor') || "rgba(220,220,220,.35)";
+
+  let highlightDecorationType = vscode.window.createTextEditorDecorationType({
+    backgroundColor: highlightColor,
+    isWholeLine: false,
+  });
+
+  let combinedRanges = [];
+
+  console.log(usedItemsOnInitial, "usedItemsOnInitial");
+
+  newContentArray.forEach((info) => {
+    const { content, startLine } = info;
+    usedItemsOnInitial.forEach((dependency) => {
+      let matchIndex = content.indexOf(dependency);
+      if (matchIndex !== -1) {
+        const pos = new vscode.Position(startLine, matchIndex);
+        const range = new vscode.Range(pos, pos.translate(0, dependency.length));
+        combinedRanges.push(range);
+      }
+    });
+  });
+
+  console.log("combinedRanges", combinedRanges);
+
+  if (combinedRanges.length > 0) {
+    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
+  }
+};
+
+let shouldProcessOnSave = false;
+let changedInfo = [];
+
+vscode.workspace.onDidChangeTextDocument((event) => {
+  const activeEditor = vscode.window.activeTextEditor;
+  if (event.document === activeEditor?.document) {
+    event.contentChanges.forEach((change) => {
+      const startLine = change.range.start.line;
+      const endLine = change.range.end.line;
+      const content = event.document.getText(new vscode.Range(startLine, 0, endLine, 0));
+      changedInfo.push({ content, startLine });  // append object to array
+    });
+  }
+});
+
+
+
+// Triggered when a document is saved
+vscode.workspace.onDidSaveTextDocument((document) => {
+  shouldProcessOnSave = true;
+  const activeEditor = vscode.window.activeTextEditor;
+  if (document === activeEditor?.document && shouldProcessOnSave) {
+    processDependenciesOnSave(activeEditor, changedInfo);
+    shouldProcessOnSave = false;
+    changedInfo = [];
+  }
+});
+
 
 let previouslyActiveEditors = new Set();
 
 vscode.window.onDidChangeVisibleTextEditors((editors) => {
   handleVisibleTextEditors(editors);
 });
+
 
 function handleVisibleTextEditors(editors) {
   // Create a Set of current visible editors by their file names
@@ -209,15 +281,18 @@ function handleVisibleTextEditors(editors) {
 const SINGLE_TAB_GROUP = 1;
 
 const performCheck = () => {
+  console.log("performCheck");
   if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
+    console.log("isScreenSplit");
     handleVisibleTextEditors(vscode.window.visibleTextEditors);
   } else {
+    console.log("not in split screen");
     processDependencies(vscode.window.activeTextEditor);
   }
 };
 
 function activate(context) {
-  const disposable = vscode.commands.registerCommand("reactImportHighlighter.checkImports", performCheck);
+  const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck());
 
   context.subscriptions.push(disposable);
 }
