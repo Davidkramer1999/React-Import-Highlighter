@@ -2,6 +2,7 @@ const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
 
+const { findAndHighlightReturn } = require('./helpers/findAndHighlightReturn');
 // get dependencies from package.json
 class DependencyCache {
   dependenciesCache = null;
@@ -40,7 +41,7 @@ class DependencyCache {
 }
 const dependencyCache = new DependencyCache();
 
-function findAndHighlightImports(content, dependencies) {
+function findAndHighlightImports(content, dependencies, startLine = 0) {
   const importedItems = [];
   const importRanges = [];
 
@@ -71,8 +72,8 @@ function findAndHighlightImports(content, dependencies) {
             const itemStart = line.indexOf(trimmedItem);
             const itemEnd = itemStart + trimmedItem.length;
 
-            const startPos = new vscode.Position(i, itemStart);
-            const endPos = new vscode.Position(i, itemEnd);
+            const startPos = new vscode.Position(i + startLine, itemStart);
+            const endPos = new vscode.Position(i + startLine, itemEnd);
 
             importRanges.push(new vscode.Range(startPos, endPos));
           });
@@ -84,69 +85,7 @@ function findAndHighlightImports(content, dependencies) {
   return { importRanges, importedItems };
 }
 
-function findAndHighlightReturn(content, dependencies) {
-  const usedItems = [];
-  const returnRanges = [];
-  let startIndex = 0;
-
-  while (true) {
-    const returnStartIndex = content.indexOf("return", startIndex);
-
-    if (returnStartIndex === -1) break;
-
-    let remainingContent = content.slice(returnStartIndex + 6); // Skip 'return'
-    let lineIndex = content.substr(0, returnStartIndex).split("\n").length - 1;
-
-    dependencies.forEach((item) => {
-      const openingTag = `<${item}`;
-      const selfClosingTag = `/>`;
-      const closingTag = `</${item}>`;
-
-      let start = 0;
-
-      while ((start = remainingContent.indexOf(openingTag, start)) !== -1) {
-        const endOfOpeningTag = remainingContent.indexOf(">", start);
-        if (endOfOpeningTag === -1) break;
-
-        const isSelfClosing = remainingContent.substring(endOfOpeningTag - 1, endOfOpeningTag + 1) === selfClosingTag;
-
-        lineIndex += remainingContent.substr(0, start).split("\n").length - 1;
-
-        let lineContent = content.split("\n")[lineIndex];
-        let lineOffset = lineContent.indexOf(openingTag) + 1; // +1 to skip the '<'
-
-        let startPos = new vscode.Position(lineIndex, lineOffset);
-        let endPos = new vscode.Position(lineIndex, lineOffset + openingTag.length - 1); // -1 to also skip the '<'
-
-        returnRanges.push(new vscode.Range(startPos, endPos));
-        usedItems.push(item); // Record the used item
-
-        if (!isSelfClosing) {
-          const closeStart = remainingContent.indexOf(closingTag, endOfOpeningTag);
-          if (closeStart !== -1) {
-            lineOffset = lineContent.indexOf(closingTag);
-            startPos = new vscode.Position(lineIndex, lineOffset + 2);
-            endPos = new vscode.Position(lineIndex, lineOffset + closingTag.length - 1);
-
-            returnRanges.push(new vscode.Range(startPos, endPos));
-          }
-        }
-
-        remainingContent = remainingContent.slice(endOfOpeningTag);
-        start = 0;
-      }
-    });
-
-    startIndex = returnStartIndex + 6;
-  }
-
-  return { returnRanges, usedItems };
-}
-
-
-let usedItemsOnInitial = new Set();
-
-const processDependencies = (activeEditor) => {
+const processDependencies = (activeEditor, newContentArray = []) => {
   if (!activeEditor) return;
 
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
@@ -161,79 +100,67 @@ const processDependencies = (activeEditor) => {
     backgroundColor: highlightColor,
     isWholeLine: false,
   });
-  const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
-  const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
 
-  usedItemsOnInitial = new Set([...usedItems]);
+  let initialCombinedRanges = [];
+  let updateCombinedRanges = [];
 
-  console.log("usedItems", usedItemsOnInitial);
-
-  const filteredRanges = importRanges.filter((range, index) => {
-    return usedItems.includes(importedItems[index]);
-  });
-
-  const combinedRanges = [...filteredRanges, ...returnRanges];
-
-  if (combinedRanges.length > 0) {
-    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
-  }
-};
+  // Initial run
 
 
-const processDependenciesOnSave = (activeEditor, newContentArray) => {
-  if (!activeEditor || !newContentArray || newContentArray.length === 0) return;
-  console.log(newContentArray, "newContentArray");
+  if (newContentArray.length !== 0) {
+    // Process only the changed lines
+    newContentArray.forEach(({ content, startLine }) => {
+      const { importRanges, importedItems } = findAndHighlightImports(content, dependencies, startLine);
+      const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems, startLine);
 
-  // No need to join the content into a single string; you're processing line by line
-  // const newContent = newContentArray.map(line => line.trim()).join(' ');
+      const filteredRanges = importRanges.filter((range, index) => {
+        return usedItems.includes(importedItems[index]);
+      });
 
-  const dependencies = dependencyCache.getDependenciesFromPackageJson();
-  if (!dependencies) return;
-
-  const highlightColor = vscode.workspace.getConfiguration('reactImportHighlighter').get('highlightColor') || "rgba(220,220,220,.35)";
-
-  let highlightDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: highlightColor,
-    isWholeLine: false,
-  });
-
-  let combinedRanges = [];
-
-  console.log(usedItemsOnInitial, "usedItemsOnInitial");
-
-  newContentArray.forEach((info) => {
-    const { content, startLine } = info;
-    usedItemsOnInitial.forEach((dependency) => {
-      let matchIndex = content.indexOf(dependency);
-      if (matchIndex !== -1) {
-        const pos = new vscode.Position(startLine, matchIndex);
-        const range = new vscode.Range(pos, pos.translate(0, dependency.length));
-        combinedRanges.push(range);
-      }
+      updateCombinedRanges = [...updateCombinedRanges, ...filteredRanges, ...returnRanges];
     });
-  });
+  } else {
+    const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
+    const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
 
-  console.log("combinedRanges", combinedRanges);
+    const initialFilteredRanges = importRanges.filter((range, index) => {
+      return usedItems.includes(importedItems[index]);
+    });
 
-  if (combinedRanges.length > 0) {
-    activeEditor.setDecorations(highlightDecorationType, combinedRanges);
+    initialCombinedRanges = [...initialFilteredRanges, ...returnRanges];
+  }
+
+  // Merge initial and updated combined ranges
+  const combinedRangesToSet = [...initialCombinedRanges];
+
+  if (combinedRangesToSet.length > 0) {
+    activeEditor.setDecorations(highlightDecorationType, combinedRangesToSet);
   }
 };
+
 
 let shouldProcessOnSave = false;
 let changedInfo = [];
 
 vscode.workspace.onDidChangeTextDocument((event) => {
   const activeEditor = vscode.window.activeTextEditor;
-  if (event.document === activeEditor?.document) {
-    event.contentChanges.forEach((change) => {
-      const startLine = change.range.start.line;
-      const endLine = change.range.end.line;
-      const content = event.document.getText(new vscode.Range(startLine, 0, endLine, 0));
-      changedInfo.push({ content, startLine });  // append object to array
-    });
-  }
+  if (event.document !== activeEditor?.document) return;
+
+  event.contentChanges.forEach((change) => {
+    const startLine = change.range.start.line;
+    const endLine = change.range.end.line;
+
+    //  console.log("Start line in didChange:", startLine);
+    //console.log("Line Content:", event.document.lineAt(startLine).text);
+
+    const content = event.document.getText(new vscode.Range(startLine, 0, endLine, 0));
+
+    if (content.trim()) {
+      changedInfo.push({ content, startLine });
+    }
+  });
 });
+
 
 
 
@@ -242,7 +169,7 @@ vscode.workspace.onDidSaveTextDocument((document) => {
   shouldProcessOnSave = true;
   const activeEditor = vscode.window.activeTextEditor;
   if (document === activeEditor?.document && shouldProcessOnSave) {
-    processDependenciesOnSave(activeEditor, changedInfo);
+    processDependencies(activeEditor, changedInfo);
     shouldProcessOnSave = false;
     changedInfo = [];
   }
