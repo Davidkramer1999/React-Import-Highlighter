@@ -39,7 +39,7 @@ const handleSaveEvent = (document) => {
 };
 
 
-vscode.workspace.onWillSaveTextDocument((e) => {
+vscode.workspace.onWillSaveTextDocument(() => {
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
         highlighterSettings.highlightDecorationType.dispose();  // Clear the decorations
@@ -78,7 +78,7 @@ const SINGLE_TAB_GROUP = 1;
 //Initial function called from extension.js
 const performCheck = () => {
     initializeHighlighter();
-    if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
+    if (vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
         handleEditorVisibilityChange(vscode.window.visibleTextEditors);
     } else {
         getImportAndReturnRanges(vscode.window.activeTextEditor);
