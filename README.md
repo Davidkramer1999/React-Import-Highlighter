@@ -1,16 +1,20 @@
 <div align="center">
   <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg?raw=true" alt="React Import Highlighter Logo" width="100">
   <h1>React Import Highlighter 🌟</h1>
+</div>
 
-![Build](https://img.shields.io/badge/build-passing-green) ![License](https://img.shields.io/badge/license-MIT-blue) ![Downloads](https://img.shields.io/badge/downloads-1000+-orange)
+<div style="border: 2px solid #ccc; border-radius: 12px; padding: 10px; display: inline-block;">
+  <img src="https://img.shields.io/badge/build-passing-green" alt="Build">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/downloads-1000+-orange" alt="Downloads">
+</div>
 
-<p style="display: flex; align-items: center;">
+<p style="display: flex; align-items: center; margin-top: 10px;">
   <strong>VS Marketplace:</strong> 
   <a href="https://marketplace.visualstudio.com/items?itemName=DavidKramer.react-import-highlighter">
     <img src="https://img.shields.io/badge/Marketplace-Download-blue?style=flat-square&logo=visual-studio-code" alt="Download on Visual Studio Marketplace">
   </a>
 </p>
-</div>
 
 ![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true)
 
@@ -32,8 +36,6 @@
 - [Release Notes](#-release-notes)
 - [Known Issues](#-known-issues)
 - [Contributing](#-contributing)
-- [Credits](#-credits)
-- [Contact](#-contact)
 
 ## 🌈 Features
 
@@ -81,17 +83,6 @@ After installation, open a React project and the extension will automatically hi
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
-
-## 💖 Credits
-
-This project uses these third-party libraries:
-
-- [React](https://reactjs.org/)
-- [Visual Studio Code API](https://code.visualstudio.com/api)
-
-## 📞 Contact
-
-For more information, reach out to me at [your-email@example.com](mailto:your-email@example.com).
 
 ---
 
