@@ -1,26 +1,20 @@
 const vscode = require("vscode");
 
+const { performCheck } = require('./src/core/importAndReturnProcessor');
 
-const { findAndHighlightReturn } = require('./src/classes/findAndHighlightReturn');
-const { findAndHighlightImports } = require('./src/classes/FindAndHighlightImport');
+/*let highlighterSettings;
 
-// get dependencies from package.json
-const { dependencyCache } = require('./src/classes/DependencyCache');
-
-
-let highlightDecorationType;
-
-// Initialization
-const initDecorationType = () => {
+// Initialize or reset the highlighter
+const initializeHighlighter = () => {
+  highlighterSettings?.dispose();  // Clear the decorations if they exist
   const highlightColor = vscode.workspace.getConfiguration('reactImportHighlighter').get('highlightColor') || "rgba(220,220,220,.35)";
-  highlightDecorationType = vscode.window.createTextEditorDecorationType({
+  highlighterSettings = vscode.window.createTextEditorDecorationType({
     backgroundColor: highlightColor,
     isWholeLine: false,
   });
-};
+};*/
 
-
-const processDependencies = (activeEditor) => {
+/*const getImportAndReturnRanges = (activeEditor) => {
   if (!activeEditor) return;
 
   const dependencies = dependencyCache.getDependenciesFromPackageJson();
@@ -38,7 +32,7 @@ const processDependencies = (activeEditor) => {
   let initialCombinedRanges = [...initialFilteredRanges, ...returnRanges];
 
   if (initialCombinedRanges.length !== 0) {
-    activeEditor.setDecorations(highlightDecorationType, initialCombinedRanges);  // Use the higher scope variable
+    activeEditor.setDecorations(highlighterSettings.highlightDecorationType, initialCombinedRanges);  // Use the higher scope variable
   }
 
 };
@@ -46,29 +40,31 @@ const processDependencies = (activeEditor) => {
 vscode.workspace.onWillSaveTextDocument((e) => {
   const activeEditor = vscode.window.activeTextEditor;
   if (activeEditor) {
-    highlightDecorationType.dispose();  // Clear the decorations
-    initDecorationType();
+    highlighterSettings.highlightDecorationType.dispose();  // Clear the decorations
+    initializeHighlighter();
   }
 });
+
+const handleSaveEvent = (document) => {
+  const activeEditor = vscode.window.activeTextEditor;
+  if (document === activeEditor?.document) {
+    initializeHighlighter();
+    processDependencies(activeEditor);
+  }
+};
 
 
 // Triggered when a document is saved
-vscode.workspace.onDidSaveTextDocument((document) => {
-  const activeEditor = vscode.window.activeTextEditor;
-  if (document === activeEditor?.document) {
-    processDependencies(activeEditor);
-  }
-});
+vscode.workspace.onDidSaveTextDocument(handleSaveEvent);
+
 
 
 let previouslyActiveEditors = new Set();
 
-vscode.window.onDidChangeVisibleTextEditors((editors) => {
-  handleVisibleTextEditors(editors);
-});
+vscode.window.onDidChangeVisibleTextEditors(handleEditorVisibilityChange);
 
 
-function handleVisibleTextEditors(editors) {
+function handleEditorVisibilityChange(editors) {
   // Create a Set of current visible editors by their file names
   const currentEditorSet = new Set(editors.map(editor => editor.document.fileName.split('\\').pop()));
 
@@ -83,7 +79,7 @@ function handleVisibleTextEditors(editors) {
   for (let editor of editors) {
     const fileName = editor.document.fileName.split('\\').pop();
     if (!previouslyActiveEditors.has(fileName)) {
-      processDependencies(editor);  // Pass the entire editor object
+      getImportAndReturnRanges(editor);  // Pass the entire editor object
       previouslyActiveEditors.add(fileName);
     }
   }
@@ -93,14 +89,13 @@ function handleVisibleTextEditors(editors) {
 const SINGLE_TAB_GROUP = 1;
 
 const performCheck = () => {
-  initDecorationType();
+  initializeHighlighter();
   if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
-    console.log("isScreenSplit");
     handleVisibleTextEditors(vscode.window.visibleTextEditors);
   } else {
-    processDependencies(vscode.window.activeTextEditor);
+    getImportAndReturnRanges(vscode.window.activeTextEditor);
   }
-};
+};*/
 
 function activate(context) {
   const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck());
