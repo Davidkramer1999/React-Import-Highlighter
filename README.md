@@ -3,10 +3,10 @@
   <h1>React Import Highlighter 🌟</h1>
 </div>
 
+---
+
 <div style="border: 2px solid #ccc; border-radius: 12px; padding: 10px; display: inline-block;">
-  <img src="https://img.shields.io/badge/build-passing-green" alt="Build">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-  <img src="https://img.shields.io/badge/downloads-1000+-orange" alt="Downloads">
   <a href="https://marketplace.visualstudio.com/items?itemName=DavidKramer.react-import-highlighter">
     <img src="https://img.shields.io/badge/Marketplace-Download-blue?style=flat-square&logo=visual-studio-code" alt="Download on Visual Studio Marketplace">
   </a>
