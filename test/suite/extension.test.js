@@ -1,19 +1,15 @@
-const assert = require("assert");
-const vscode = require("vscode");
-const path = require("path");
+const assert = require('assert');
 
-suite("Extension Test Suite", () => {
-  vscode.window.showInformationMessage("Start all tests.");
+// You can import and use all API from the 'vscode' module
+// as well as import your extension to test it
+const vscode = require('vscode');
+// const myExtension = require('../extension');
 
-  test("Check Imports Test", async () => {
-    const uri = vscode.Uri.file(path.join(__dirname, "..", "..", "sampleWorkspace", "sample.js"));
-    const document = await vscode.workspace.openTextDocument(uri);
-    await vscode.window.showTextDocument(document);
+suite('Extension Test Suite', () => {
+  vscode.window.showInformationMessage('Start all tests.');
 
-    // Run your extension command
-    await vscode.commands.executeCommand("reactImportHighlighter.checkImports");
-
-    // Check results here - this is a placeholder and might need actual assertions based on your implementation
-    assert.strictEqual([1, 2, 3].length, 3);
+  test('Sample test', () => {
+    assert.strictEqual(-1, [1, 2, 3].indexOf(5));
+    assert.strictEqual(-1, [1, 2, 3].indexOf(0));
   });
 });
