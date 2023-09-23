@@ -7,14 +7,10 @@
   <img src="https://img.shields.io/badge/build-passing-green" alt="Build">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
   <img src="https://img.shields.io/badge/downloads-1000+-orange" alt="Downloads">
-</div>
-
-<p style="display: flex; align-items: center; margin-top: 10px;">
-  <strong>VS Marketplace:</strong> 
   <a href="https://marketplace.visualstudio.com/items?itemName=DavidKramer.react-import-highlighter">
     <img src="https://img.shields.io/badge/Marketplace-Download-blue?style=flat-square&logo=visual-studio-code" alt="Download on Visual Studio Marketplace">
   </a>
-</p>
+</div>
 
 ![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true)
 
