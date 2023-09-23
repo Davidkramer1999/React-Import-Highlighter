@@ -4,11 +4,11 @@
 
 ![Build](https://img.shields.io/badge/build-passing-green) ![License](https://img.shields.io/badge/license-MIT-blue) ![Downloads](https://img.shields.io/badge/downloads-1000+-orange)
 
+**VS Marketplace**: [![Download on Visual Studio Marketplace](https://img.shields.io/badge/Marketplace-Download-blue?style=flat-square&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=DavidKramer.react-import-highlighter)
+
 </div>
 
-![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true)
-
----
+## <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true" width="500" height="300" alt="React Import Highlighter Demo">
 
 > 🛠 **Level up your React development workflow!**
 >
