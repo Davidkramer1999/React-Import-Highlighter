@@ -7,10 +7,7 @@ This extension is tailored for React developers. It provides features and tools 
 ## Features
 
 - Automatic detection of React components and libraries in your project.
-- Simplified import statement generation.
-- Highlighting of unused imports.
 - Improved code navigation within your React project.
-- And more!
 
 ## Requirements
 
