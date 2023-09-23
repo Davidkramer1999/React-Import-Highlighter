@@ -79,7 +79,7 @@ const SINGLE_TAB_GROUP = 1;
 const performCheck = () => {
     initializeHighlighter();
     if (isScreenSplit = vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
-        handleVisibleTextEditors(vscode.window.visibleTextEditors);
+        handleEditorVisibilityChange(vscode.window.visibleTextEditors);
     } else {
         getImportAndReturnRanges(vscode.window.activeTextEditor);
     }

@@ -1,5 +1,7 @@
 # React Import Highlighter
 
+![Demo GIF](./images/test4.gif)
+
 ![React Import Highlighter Logo](./images/react-import-highlighter.jpg)
 
 This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
