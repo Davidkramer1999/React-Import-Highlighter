@@ -3,6 +3,7 @@ const { handleSaveEvent, handleEditorVisibilityChange } = require('../core/impor
 const { initializeHighlighter, highlighterSettings } = require('./highlighter');
 
 vscode.workspace.onWillSaveTextDocument((e) => {
+    console.log("Will save");
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
         highlighterSettings.highlightDecorationType.dispose();  // Clear the decorations
@@ -12,3 +13,4 @@ vscode.workspace.onWillSaveTextDocument((e) => {
 
 vscode.workspace.onDidSaveTextDocument(handleSaveEvent);
 vscode.window.onDidChangeVisibleTextEditors(handleEditorVisibilityChange);
+

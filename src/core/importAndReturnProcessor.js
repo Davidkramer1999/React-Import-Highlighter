@@ -6,9 +6,6 @@ const { dependencyCache } = require('../classes/DependencyCache');
 const { highlighterSettings } = require('../utils/highlighter');
 const { initializeHighlighter } = require('../utils/highlighter');
 
-
-
-
 const getImportAndReturnRanges = (activeEditor) => {
     if (!activeEditor) return;
 
@@ -37,10 +34,22 @@ const handleSaveEvent = (document) => {
     const activeEditor = vscode.window.activeTextEditor;
     if (document === activeEditor?.document) {
         initializeHighlighter();
-        processDependencies(activeEditor);
+        getImportAndReturnRanges(activeEditor);
     }
 };
 
+
+vscode.workspace.onWillSaveTextDocument((e) => {
+    console.log("Will save");
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        highlighterSettings.highlightDecorationType.dispose();  // Clear the decorations
+        initializeHighlighter();
+    }
+});
+
+vscode.workspace.onDidSaveTextDocument(handleSaveEvent);
+vscode.window.onDidChangeVisibleTextEditors(handleEditorVisibilityChange)
 
 let previouslyActiveEditors = new Set();
 
@@ -48,7 +57,6 @@ let previouslyActiveEditors = new Set();
 function handleEditorVisibilityChange(editors) {
     // Create a Set of current visible editors by their file names
     const currentEditorSet = new Set(editors.map(editor => editor.document.fileName.split('\\').pop()));
-
     // Remove editors that are no longer visible from the set of previously active editors
     for (let name of previouslyActiveEditors) {
         if (!currentEditorSet.has(name)) {

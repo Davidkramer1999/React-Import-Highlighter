@@ -48,4 +48,14 @@ Stay updated with the latest changes and improvements in React Import Highlighte
 
 - Initial release of React Import Highlighter, focused on React development.
 
+## Known Issues
+
+Below are the known issues as of the current version:
+
+## Unintended Extended Highlighting on Import Names
+
+- **Description**: : When additional characters are typed immediately after a highlighted import item, the highlighting extends to include those additional characters.
+- **Impact**: Causes misleading highlights in the editor.
+- **Workaround**: Save the file (Ctrl+S) to reset the highlighting to its intended scope.
+
 **Enjoy React development with React Import Highlighter!**
