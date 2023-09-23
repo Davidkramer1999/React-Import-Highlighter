@@ -1,61 +1,96 @@
-<h1>
-  <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg?raw=true" alt="React Import Highlighter Logo" width="50" style="vertical-align:middle;">
-  <span style="vertical-align:middle;">React Import Highlighter</span>
-</h1>
+<div align="center">
+  <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg?raw=true" alt="React Import Highlighter Logo" width="100">
+  <h1>React Import Highlighter 🌟</h1>
+
+![Build](https://img.shields.io/badge/build-passing-green) ![License](https://img.shields.io/badge/license-MIT-blue) ![Downloads](https://img.shields.io/badge/downloads-1000+-orange)
+
+</div>
 
 ![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true)
 
-This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
+---
 
-## Features
+> 🛠 **Level up your React development workflow!**
+>
+> 🔍 **Navigate through your codebase with ease!**
 
-- Automatic detection of React components and libraries in your project.
-- Improved code navigation within your React project.
+---
 
-## Requirements
+## 📋 Table of Contents
 
-To use this extension, you need:
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [Installation](#-installation)
+- [How to Use](#-how-to-use)
+- [Extension Settings](#-extension-settings)
+- [Release Notes](#-release-notes)
+- [Known Issues](#-known-issues)
+- [Contributing](#-contributing)
+- [Credits](#-credits)
+- [Contact](#-contact)
+
+## 🌈 Features
+
+- 🤖 Automatic detection of React components and libraries.
+- 🚀 Improved code navigation.
+- 🎨 Customizable highlight colors.
+
+---
+
+## 🚀 Getting Started
+
+### Requirements
 
 - Visual Studio Code (latest version recommended).
 - A React project or React-related files.
 
-## Extension Settings
+## 🔨 Installation
 
-This extension contributes the following settings:
+To install the extension:
 
-- `reactImportHighlighter.packageJsonPath`: Path to your `package.json` file relative to the workspace root. For example, if your `package.json` is in the root directory of your workspace, you can set this to `"./package.json"`.
+1. Open **Visual Studio Code**
+2. Go to **Extensions**
+3. Search for **React Import Highlighter**
+4. Click **Install**
 
-- `reactImportHighlighter.highlightColor`: Customize the highlight color for dependencies. The value should be in RGBA format, for example: `"rgba(255,0,0,.35)"`. This setting allows you to change the
+## 📘 How to Use
 
-You can configure these settings in your Visual Studio Code settings.
+After installation, open a React project and the extension will automatically highlight import statements.
 
-## Where to Add These Settings
+## ⚙️ Extension Settings
 
-Inside the `settings.json` file in the `.vscode` folder, you can override default and user settings by adding:
+- 📦 **`reactImportHighlighter.packageJsonPath`**: Path to `package.json`.
+- 🎨 **`reactImportHighlighter.highlightColor`**: Highlight color in RGBA.
 
-```json
-{
-  "reactImportHighlighter.packageJsonPath": "./package.json",
-  "reactImportHighlighter.highlightColor": "rgba(255,0,0,.35)"
-}
-```
-
-## Release Notes
-
-Stay updated with the latest changes and improvements in React Import Highlighter.
+## 📝 Release Notes
 
 ### 1.0.0
 
-- Initial release of React Import Highlighter, focused on React development.
+- Initial release.
 
-## Known Issues
+## ❗ Known Issues
 
-Below are the known issues as of the current version:
+- **Unintended Extended Highlighting on Import Names**
 
-### Unintended Extended Highlighting on Import Names
+## 🤝 Contributing
 
-- **Description**: : When additional characters are typed immediately after a highlighted import item, the highlighting extends to include those additional characters.
-- **Impact**: Causes misleading highlights in the editor.
-- **Workaround**: Save the file (Ctrl+S) to reset the highlighting to its intended scope.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
 
-**Enjoy React development with React Import Highlighter!**
+## 💖 Credits
+
+This project uses these third-party libraries:
+
+- [React](https://reactjs.org/)
+- [Visual Studio Code API](https://code.visualstudio.com/api)
+
+## 📞 Contact
+
+For more information, reach out to me at [your-email@example.com](mailto:your-email@example.com).
+
+---
+
+<div align="center">
+
+🌟 **Happy React Developing!** 🌟
+
+</div>
