@@ -3,14 +3,14 @@
   <h1>React Import Highlighter 🌟</h1>
 </div>
 
----
-
 <div style="border: 2px solid #ccc; border-radius: 12px; padding: 10px; display: inline-block;">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
   <a href="https://marketplace.visualstudio.com/items?itemName=DavidKramer.react-import-highlighter">
     <img src="https://img.shields.io/badge/Marketplace-Download-blue?style=flat-square&logo=visual-studio-code" alt="Download on Visual Studio Marketplace">
   </a>
 </div>
+
+---
 
 ![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif?raw=true)
 
