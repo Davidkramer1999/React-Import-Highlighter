@@ -29,9 +29,9 @@
 - [Installation](#-installation)
 - [How to Use](#-how-to-use)
 - [Extension Settings](#-extension-settings)
-- [Release Notes](#-release-notes)
 - [Known Issues](#-known-issues)
 - [Contributing](#-contributing)
+- [Change Log](#-change-log)
 
 ## 🌈 Features
 
@@ -66,12 +66,6 @@ After installation, open a React project and the extension will automatically hi
 - 📦 **`reactImportHighlighter.packageJsonPath`**: Path to `package.json`.
 - 🎨 **`reactImportHighlighter.highlightColor`**: Highlight color in RGBA.
 
-## 📝 Release Notes
-
-### 1.0.0
-
-- Initial release.
-
 ## ❗ Known Issues
 
 - **Unintended Extended Highlighting on Import Names**
@@ -79,6 +73,10 @@ After installation, open a React project and the extension will automatically hi
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
+
+## 📜 Change Log
+
+For details about changes in each release, please see the [CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
