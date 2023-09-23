@@ -1,9 +1,9 @@
 <h1>
-  <img src="./images/react-import-highlighter.jpg" alt="React Import Highlighter Logo" width="50">
-  React Import Highlighter
+  <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg" alt="React Import Highlighter Logo" width="50" style="vertical-align:middle;">
+  <span style="vertical-align:middle;">React Import Highlighter</span>
 </h1>
 
-![Demo GIF](./images/test4.gif)
+![React Import Highlighter Demo](https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/test4.gif)
 
 This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
 
