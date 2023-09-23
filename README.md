@@ -1,8 +1,9 @@
-# React Import Highlighter
+<h1>
+  <img src="./images/react-import-highlighter.jpg" alt="React Import Highlighter Logo" width="50">
+  React Import Highlighter
+</h1>
 
 ![Demo GIF](./images/test4.gif)
-
-![React Import Highlighter Logo](./images/react-import-highlighter.jpg)
 
 This extension is tailored for React developers. It provides features and tools to streamline your React development workflow.
 
@@ -51,7 +52,7 @@ Stay updated with the latest changes and improvements in React Import Highlighte
 
 Below are the known issues as of the current version:
 
-## Unintended Extended Highlighting on Import Names
+### Unintended Extended Highlighting on Import Names
 
 - **Description**: : When additional characters are typed immediately after a highlighted import item, the highlighting extends to include those additional characters.
 - **Impact**: Causes misleading highlights in the editor.
