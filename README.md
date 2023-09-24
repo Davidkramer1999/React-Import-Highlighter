@@ -63,7 +63,6 @@ After installation, open a React project and the extension will automatically hi
 
 ## ⚙️ Extension Settings
 
-- 📦 **`reactImportHighlighter.packageJsonPath`**: Path to `package.json`.
 - 🎨 **`reactImportHighlighter.highlightColor`**: Highlight color in RGBA.
 
 ## ❗ Known Issues

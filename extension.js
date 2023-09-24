@@ -1,13 +1,45 @@
 const vscode = require("vscode");
+const { initializeReactImportHighlighter } = require('./src/core/initializeReactImportHighlighter');
+const dependencyCaches = require('./src/utils/getDependencyCache');
+const { highlighterSettings } = require('./src/utils/highlighter');
 
-const { performCheck } = require('./src/core/importAndReturnProcessor');
+function activate() {
+  const dependencyCache = dependencyCaches.getDependencyCache();
 
-function activate(context) {
-  const disposable = vscode.commands.registerCommand("liblinkerjs.checkImports", performCheck());
+  if (!dependencyCache) {
+    console.error("DependencyCache is not available");
+    return;
+  }
 
-  context.subscriptions.push(disposable);
+  setupDependencyCacheInitializer(dependencyCache);
+  executeInitializer(dependencyCache);
+  subscribeToCacheUpdates(dependencyCache);
 }
 
-function deactivate() { }
+function setupDependencyCacheInitializer(dependencyCache) {
+  let cacheInitialized = false;
+
+  dependencyCache.setInitializer(() => {
+    if (!cacheInitialized) {
+      console.log("Initializer called");
+      initializeReactImportHighlighter();
+      cacheInitialized = true;
+    }
+  });
+}
+
+function executeInitializer(dependencyCache) {
+  dependencyCache.initializer();
+}
+
+function subscribeToCacheUpdates(dependencyCache) {
+  dependencyCache.on('cacheUpdated', () => {
+    highlighterSettings.highlightDecorationType.dispose();
+    initializeReactImportHighlighter();
+  });
+}
+
+function deactivate() {
+}
 
 module.exports = { activate, deactivate };

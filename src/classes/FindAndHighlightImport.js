@@ -1,7 +1,7 @@
 const vscode = require("vscode");
 
 
-function findAndHighlightImports(content, dependencies, startLine = 0) {
+function findAndHighlightImports(content, dependencies) {
     const importedItems = [];
     const importRanges = [];
 
@@ -21,29 +21,32 @@ function findAndHighlightImports(content, dependencies, startLine = 0) {
             if (dependencies.includes(dep)) {
                 const openBraceIndex = trimmedLine.indexOf("{");
                 const closeBraceIndex = trimmedLine.indexOf("}");
+                const hasBraces = openBraceIndex !== -1 && closeBraceIndex !== -1;
 
-                if (openBraceIndex !== -1 && closeBraceIndex !== -1) {
-                    const items = trimmedLine.slice(openBraceIndex + 1, closeBraceIndex).split(",");
+                const importStart = hasBraces ? openBraceIndex + 1 : trimmedLine.indexOf("import") + 6;
+                const importEnd = hasBraces ? closeBraceIndex : fromIndex;
 
-                    items.forEach((item) => {
-                        const trimmedItem = item.trim();
-                        importedItems.push(trimmedItem);
+                const items = trimmedLine.slice(importStart, importEnd).split(",");
 
-                        const itemStart = line.indexOf(trimmedItem);
-                        const itemEnd = itemStart + trimmedItem.length;
+                items.forEach((item) => {
+                    const trimmedItem = item.trim();
+                    importedItems.push(trimmedItem);
 
-                        const startPos = new vscode.Position(i + startLine, itemStart);
-                        const endPos = new vscode.Position(i + startLine, itemEnd);
+                    const itemStart = line.indexOf(trimmedItem)
+                    const itemEnd = itemStart + trimmedItem.length;
 
-                        importRanges.push(new vscode.Range(startPos, endPos));
-                    });
-                }
+                    const startPos = new vscode.Position(i, itemStart);
+                    const endPos = new vscode.Position(i, itemEnd);
+
+                    importRanges.push(new vscode.Range(startPos, endPos));
+                });
             }
         }
     });
 
     return { importRanges, importedItems };
 }
+
 
 
 module.exports = {
