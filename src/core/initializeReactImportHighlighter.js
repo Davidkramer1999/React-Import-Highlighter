@@ -1,7 +1,14 @@
 
 const vscode = require('vscode');
-const { handleEditorVisibilityChange, getImportAndReturnRanges } = require('./importAndReturnProcessor');
+const { handleEditorVisibilityChange, highlightImportAndReturnInEditor } = require('./highlightImportReturnProcessor.js');
 const { initializeHighlighter } = require('../utils/highlighter');
+const dependencyCache = require('../classes/DependencyCache');
+const { highlighterSettings } = require('../utils/highlighter');
+
+dependencyCache.on('cacheUpdated', () => {
+    highlighterSettings.highlightDecorationType.dispose();
+    initializeReactImportHighlighter();
+});
 
 const SINGLE_TAB_GROUP = 1;
 
@@ -11,7 +18,7 @@ const initializeReactImportHighlighter = () => {
     if (vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
         handleEditorVisibilityChange(vscode.window.visibleTextEditors);
     } else {
-        getImportAndReturnRanges(vscode.window.activeTextEditor);
+        highlightImportAndReturnInEditor(vscode.window.activeTextEditor);
     }
 };
 
