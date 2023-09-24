@@ -9,7 +9,7 @@ const { initializeHighlighter } = require('../utils/highlighter');
 const getImportAndReturnRanges = (activeEditor) => {
     if (!activeEditor) return;
 
-    const dependencies = dependencyCache.getDependencyCache().getDependenciesFromPackageJson();
+    const dependencies = dependencyCache?.getDependencies();
     if (!dependencies) return;
 
     const document = activeEditor.document;
