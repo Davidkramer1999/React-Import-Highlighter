@@ -2,6 +2,16 @@
 
 All notable changes to the React Import Highlighter will be documented in this file.
 
+## [0.0.5] - 24.9-2023
+
+### Added
+
+- Feature to update styling when dependencies change.
+
+### Removed
+
+- Removed package.json path specification; default now assumes root folder.
+
 ## [0.0.4] - 23.9-2023
 
 ### Added
