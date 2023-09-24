@@ -2,14 +2,14 @@ const vscode = require('vscode');
 
 const { findAndHighlightReturn } = require('../classes/findAndHighlightReturn');
 const { findAndHighlightImports } = require('../classes/FindAndHighlightImport');
-const { dependencyCache } = require('../classes/DependencyCache');
+const dependencyCache = require('../utils/getDependencyCache');
 const { highlighterSettings } = require('../utils/highlighter');
 const { initializeHighlighter } = require('../utils/highlighter');
 
 const getImportAndReturnRanges = (activeEditor) => {
     if (!activeEditor) return;
 
-    const dependencies = dependencyCache.getDependenciesFromPackageJson();
+    const dependencies = dependencyCache.getDependencyCache().getDependenciesFromPackageJson();
     if (!dependencies) return;
 
     const document = activeEditor.document;
@@ -73,17 +73,5 @@ function handleEditorVisibilityChange(editors) {
     }
 }
 
-const SINGLE_TAB_GROUP = 1;
 
-//Initial function called from extension.js
-const performCheck = () => {
-    initializeHighlighter();
-    if (vscode.window.tabGroups.all.length > SINGLE_TAB_GROUP) {
-        handleEditorVisibilityChange(vscode.window.visibleTextEditors);
-    } else {
-        getImportAndReturnRanges(vscode.window.activeTextEditor);
-    }
-};
-
-
-module.exports = { handleSaveEvent, handleEditorVisibilityChange, performCheck };
+module.exports = { handleSaveEvent, handleEditorVisibilityChange, getImportAndReturnRanges };
