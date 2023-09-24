@@ -2,14 +2,15 @@ const vscode = require('vscode');
 
 const { findAndHighlightReturn } = require('../classes/findAndHighlightReturn');
 const { findAndHighlightImports } = require('../classes/FindAndHighlightImport');
-const dependencyCache = require('../utils/getDependencyCache');
+const dependencyCache = require('../classes/DependencyCache');
 const { highlighterSettings } = require('../utils/highlighter');
 const { initializeHighlighter } = require('../utils/highlighter');
 
-const getImportAndReturnRanges = (activeEditor) => {
+const highlightImportAndReturnInEditor = (activeEditor) => {
     if (!activeEditor) return;
 
-    const dependencies = dependencyCache?.getDependencies();
+    const dependencies = dependencyCache.getDependenciesFromPackageJson();
+
     if (!dependencies) return;
 
     const document = activeEditor.document;
@@ -30,11 +31,11 @@ const getImportAndReturnRanges = (activeEditor) => {
 };
 
 // onDidSaveTextDocument is triggered when a document is saved
-const handleSaveEvent = (document) => {
+const handleDocumentSaveEvent = (document) => {
     const activeEditor = vscode.window.activeTextEditor;
     if (document === activeEditor?.document) {
         initializeHighlighter();
-        getImportAndReturnRanges(activeEditor);
+        highlightImportAndReturnInEditor(activeEditor);
     }
 };
 
@@ -47,7 +48,7 @@ vscode.workspace.onWillSaveTextDocument(() => {
     }
 });
 
-vscode.workspace.onDidSaveTextDocument(handleSaveEvent);
+vscode.workspace.onDidSaveTextDocument(handleDocumentSaveEvent);
 vscode.window.onDidChangeVisibleTextEditors(handleEditorVisibilityChange)
 
 let previouslyActiveEditors = new Set();
@@ -67,11 +68,11 @@ function handleEditorVisibilityChange(editors) {
     for (let editor of editors) {
         const fileName = editor.document.fileName.split('\\').pop();
         if (!previouslyActiveEditors.has(fileName)) {
-            getImportAndReturnRanges(editor);  // Pass the entire editor object
+            highlightImportAndReturnInEditor(editor);  // Pass the entire editor object
             previouslyActiveEditors.add(fileName);
         }
     }
 }
 
 
-module.exports = { handleSaveEvent, handleEditorVisibilityChange, getImportAndReturnRanges };
+module.exports = { handleDocumentSaveEvent, handleEditorVisibilityChange, highlightImportAndReturnInEditor };
