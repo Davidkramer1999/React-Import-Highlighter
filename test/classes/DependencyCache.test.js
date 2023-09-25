@@ -26,20 +26,38 @@ suite('DependencyCache Test Suite', () => {
         sinon.restore();
     });
 
-    test('should return cached dependencies', () => {
-        // Initial setup
-        dependencyCache.dependenciesCache = ['dep1', 'dep2'];
+    test('should setup watcher if dependencies exist and have changed', async function () {
+        dependencyCache.dependenciesCache = { 'dep1': '1.0.0' };
 
-        const result = dependencyCache.getDependenciesFromPackageJson();
-        assert.deepStrictEqual(result, ['dep1', 'dep2']);
+        fsReadStub.resetBehavior();
+        fsReadStub.onFirstCall().returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0', 'dep2': '2.0.0' } }));
+        fsReadStub.onSecondCall().returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0', 'dep3': '3.0.0' } }));
+
+        const emitterSpy = sinon.spy(dependencyCache, 'emit');
+
+        // Act
+        await dependencyCache.getDependenciesFromPackageJson();
+
+
+        // Assert
+        assert.strictEqual(dependencyCache.isWatcherSet, true);
+        assert.deepEqual(dependencyCache.dependenciesCache, { 'dep1': '1.0.0', 'dep2': '2.0.0' });
+
+        fsWatchStub.yield();
+
+        // More Assertions
+        assert.deepEqual(dependencyCache.dependenciesCache, { 'dep1': '1.0.0', 'dep3': '3.0.0' });
+        sinon.assert.calledOnce(emitterSpy);
+        sinon.assert.calledWith(emitterSpy, 'cacheUpdated');
     });
 
-    test('should read package.json and return dependencies', () => {
+    test('should read package.json and return dependencies', async () => {
         fsExistsStub.returns(true);
         fsReadStub.returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0', 'dep2': '2.0.0' } }));
-        const result = dependencyCache.getDependenciesFromPackageJson();
-        assert.deepStrictEqual(result, ['dep1', 'dep2']);
+        await dependencyCache.getDependenciesFromPackageJson();
+        assert.deepStrictEqual(dependencyCache.dependenciesCache, { 'dep1': '1.0.0', 'dep2': '2.0.0' });
     });
+
 
     test('should not set up new file watcher if one is already active', () => {
         dependencyCache.isWatcherSet = true;
@@ -47,6 +65,13 @@ suite('DependencyCache Test Suite', () => {
         fsReadStub.returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0' } }));
         dependencyCache.getDependenciesFromPackageJson();
         assert(fsWatchStub.notCalled);
+    });
+
+    test('should return cached dependencies', async () => {
+        fsReadStub.returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0', 'dep2': '2.0.0' } }));
+        const result = await dependencyCache.getDependenciesFromPackageJson();
+        console.log('result', result);
+        assert.deepStrictEqual(result, ['dep1', 'dep2']);
     });
 
 });
