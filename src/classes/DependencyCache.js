@@ -50,7 +50,8 @@ class DependencyCache extends EventEmitter {
 
             this.isWatcherSet = true;
         }
-
+        console.log('this.dependenciesCache2', this.dependenciesCache);
+        console.log('Object.keys(this.dependenciesCache)', Object.keys(this.dependenciesCache));
         return Object.keys(this.dependenciesCache);
     };
 }
