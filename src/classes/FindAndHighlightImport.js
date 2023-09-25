@@ -1,50 +1,78 @@
-const vscode = require("vscode");
+function parseImportStatement(importStatement) {
+    const fromIndex = importStatement.indexOf("from");
+    if (fromIndex === -1) return null;
 
+    const dep = importStatement
+        .slice(fromIndex + 5)
+        .replace(/['"`;]/g, "")
+        .trim();
 
-function findAndHighlightImports(content, dependencies) {
+    const openBraceIndex = importStatement.indexOf("{");
+    const closeBraceIndex = importStatement.indexOf("}");
+    const hasBraces = openBraceIndex !== -1 && closeBraceIndex !== -1;
+
+    const importStart = hasBraces ? openBraceIndex + 1 : importStatement.indexOf("import") + 6;
+    const importEnd = hasBraces ? closeBraceIndex : fromIndex;
+
+    const items = importStatement.slice(importStart, importEnd).split(/\s*,\s*/);
+
+    if (hasBraces) {
+        const defaultImport = importStatement.slice(importStatement.indexOf("import") + 6, openBraceIndex).trim();
+        const namedImports = importStatement.slice(openBraceIndex + 1, closeBraceIndex).trim();
+        const items = namedImports ? namedImports.split(/\s*,\s*/) : [];
+
+        if (defaultImport) {
+            items.unshift(defaultImport.replace(',', '').trim());
+        }
+        return { dep, items, hasBraces };
+    }
+    return { dep, items, hasBraces };
+}
+
+function handleImportItem(item, i, line, PositionConstructor, RangeConstructor, importedItems, importRanges) {
+    let trimmedItem = item.trim();
+
+    // Handle aliased imports
+    if (trimmedItem.includes(" as ")) {
+        const parts = trimmedItem.split(" as ");
+        trimmedItem = parts[1].trim();  // Use the alias
+    }
+
+    importedItems.push(trimmedItem);
+
+    const itemStart = line.indexOf(trimmedItem);
+    const itemEnd = itemStart + trimmedItem.length;
+
+    const startPos = new PositionConstructor(i, itemStart);
+    const endPos = new PositionConstructor(i, itemEnd);
+
+    importRanges.push(new RangeConstructor(startPos, endPos));
+}
+
+function findAndHighlightImports(
+    content,
+    dependencies,
+    PositionConstructor,
+    RangeConstructor
+) {
     const importedItems = [];
     const importRanges = [];
 
     const lines = content.split("\n");
 
     lines.forEach((line, i) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith("import")) {
-            const fromIndex = trimmedLine.indexOf("from");
-            if (fromIndex === -1) return;
+        const importStatements = line.split(';').filter(statement => statement.trim().startsWith('import'));
 
-            const dep = trimmedLine
-                .slice(fromIndex + 5)
-                .replace(/['"`;]/g, "")
-                .trim();
+        importStatements.forEach((importStatement) => {
+            const parsed = parseImportStatement(importStatement.trim());
+            if (!parsed || !dependencies.includes(parsed.dep)) return;
 
-            if (dependencies.includes(dep)) {
-                const openBraceIndex = trimmedLine.indexOf("{");
-                const closeBraceIndex = trimmedLine.indexOf("}");
-                const hasBraces = openBraceIndex !== -1 && closeBraceIndex !== -1;
-
-                const importStart = hasBraces ? openBraceIndex + 1 : trimmedLine.indexOf("import") + 6;
-                const importEnd = hasBraces ? closeBraceIndex : fromIndex;
-
-                const items = trimmedLine.slice(importStart, importEnd).split(",");
-
-                items.forEach((item) => {
-                    const trimmedItem = item.trim();
-                    importedItems.push(trimmedItem);
-
-                    const itemStart = line.indexOf(trimmedItem)
-                    const itemEnd = itemStart + trimmedItem.length;
-
-                    const startPos = new vscode.Position(i, itemStart);
-                    const endPos = new vscode.Position(i, itemEnd);
-
-                    importRanges.push(new vscode.Range(startPos, endPos));
-                });
-            }
-        }
+            parsed.items.forEach((item) => {
+                handleImportItem(item, i, line, PositionConstructor, RangeConstructor, importedItems, importRanges);
+            });
+        });
     });
-    console.log("importRanges", importRanges);
-    console.log("importedItems", importedItems);
+
     return { importRanges, importedItems };
 }
 

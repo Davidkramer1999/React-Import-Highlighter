@@ -16,7 +16,8 @@ const highlightImportAndReturnInEditor = (activeEditor) => {
     const document = activeEditor.document;
     const content = document.getText();
 
-    const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
+    const { importRanges, importedItems } = findAndHighlightImports(content, dependencies, vscode.Position,
+        vscode.Range,);
     console.log("importRanges", importRanges);
     const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
         content,
@@ -24,8 +25,8 @@ const highlightImportAndReturnInEditor = (activeEditor) => {
         vscode.Position,
         vscode.Range,
         findLineIndex,
-        importRanges,  // Passing importRanges as an argument
-        importedItems  // Passing importedItems as an argument
+        importRanges,
+        importedItems
     );
 
     let initialCombinedRanges = [...filteredImportRanges, ...returnRanges];
