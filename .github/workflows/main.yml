@@ -24,15 +24,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: "Automated Version Bump"
-        uses: "phips28/gh-action-bump-version@master"
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-        with:
-          minor-wording: "add,Adds,new"
-          major-wording: "MAJOR,cut-major"
-          patch-wording: "patch,fixes"
-
       - name: Package Extension
         run: vsce package
 
