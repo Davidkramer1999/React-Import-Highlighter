@@ -16,39 +16,25 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "20"
+          node-version: "16"
+
+      - name: Install vsce
+        run: npm install -g vsce
 
       - name: Install dependencies
         run: npm install
 
-      - name: Start Xvfb
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y xvfb
-          Xvfb :99 &
+      - name: Automated Version Bump
+        id: version-bump
+        uses: phips28/gh-action-bump-version@master
+        with:
+          tag-prefix: "version" # optional: you can specify a prefix for your tag here
         env:
-          DISPLAY: ":99"
-        if: runner.os == 'Linux'
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          PACKAGEJSON_DIR: "." # specify the location of your package.json if it's not in the root
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Package Extension
+        run: vsce package
 
-      - name: Run Tests
-        run: npm run test
-        env:
-          DISPLAY: ":99"
-
-      - name: Bump version
-        run: npm version patch
-        env:
-          GIT_USER_NAME: github-actions
-          GIT_USER_EMAIL: github-actions@github.com
-
-      - name: Push changes
-        run: |
-          git config --local user.name "$GIT_USER_NAME"
-          git config --local user.email "$GIT_USER_EMAIL"
-          git push
-
-      - name: Publish via vsce
-        run: npm run deploy
+      - name: Publish Extension
+        run: vsce publish -p ${{ secrets.VSCE_TOKEN }}
