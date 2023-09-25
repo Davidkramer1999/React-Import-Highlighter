@@ -137,16 +137,16 @@ suite('FindAndHighlightReturn Test Suite', () => {
             export default function DemoComponent() {
                 return (
                   <div>
-      <Row>
-        <Col>
-          <span>
-            <FontAwesomeIcon icon="check-square" /> <Button>Click Me!</Button>
-            <Button>Click Me!</Button>
-          </span>
-        </Col>
-      </Row>
-      <DataTable columns={columns} data={data} />
-    </div>
+                    <Row>
+                        <Col>
+                        <span>
+                            <FontAwesomeIcon icon="check-square" /> <Button>Click Me!</Button>
+                            <Button>Click Me!</Button>
+                        </span>
+                        </Col>
+                    </Row>
+                    <DataTable columns={columns} data={data} />
+                    </div>
                 );
             }
         `;
@@ -171,7 +171,78 @@ suite('FindAndHighlightReturn Test Suite', () => {
         assert.strictEqual(filteredImportRanges.length, 5); // Assuming all imported items are used
     });
 
+    test('findAndHighlightReturn with empty content', () => {
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            '',
+            ['div'],
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            [0],
+            ['div']
+        );
+        assert.strictEqual(returnRanges.length, 0);
+        assert.strictEqual(filteredImportRanges.length, 0);
+    });
 
+    test('findAndHighlightReturn with no dependencies', () => {
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            '<div></div>',
+            [],
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            [0],
+            ['div']
+        );
+        assert.strictEqual(returnRanges.length, 0);
+        assert.strictEqual(filteredImportRanges.length, 0);
+    });
+
+    test('findAndHighlightReturn with unused imports', () => {
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            '<div></div>',
+            ['div'],
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            [0, 1],
+            ['div', 'span']
+        );
+        assert.strictEqual(returnRanges.length, 2);
+        assert.strictEqual(filteredImportRanges.length, 1);
+        assert.deepStrictEqual(filteredImportRanges, [0]);
+    });
+
+    // Test for no matching ranges for used items
+    test('findAndHighlightReturn with no matching ranges for used items', () => {
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            '<div></div>',
+            ['div'],
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            [],
+            []
+        );
+        assert.strictEqual(returnRanges.length, 2);
+        assert.strictEqual(filteredImportRanges.length, 0);
+    });
+
+    // Test for case-sensitive dependencies
+    test('findAndHighlightReturn with case-sensitive dependencies', () => {
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            '<div></div>',
+            ['Div'],  // Note the uppercase 'D'
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            [0],
+            ['Div']
+        );
+        assert.strictEqual(returnRanges.length, 0);
+        assert.strictEqual(filteredImportRanges.length, 0);
+    });
 
 });
 
