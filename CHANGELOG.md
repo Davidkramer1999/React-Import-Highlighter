@@ -2,6 +2,14 @@
 
 All notable changes to the React Import Highlighter will be documented in this file.
 
+## [0.0.7] - 25.9-2023
+
+### Added
+
+- Added support for multi lines
+
+---
+
 ## [0.0.6] - 24.9-2023
 
 ### Added
