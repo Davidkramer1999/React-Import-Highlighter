@@ -70,7 +70,6 @@ suite('DependencyCache Test Suite', () => {
     test('should return cached dependencies', async () => {
         fsReadStub.returns(JSON.stringify({ dependencies: { 'dep1': '1.0.0', 'dep2': '2.0.0' } }));
         const result = await dependencyCache.getDependenciesFromPackageJson();
-        console.log('result', result);
         assert.deepStrictEqual(result, ['dep1', 'dep2']);
     });
 

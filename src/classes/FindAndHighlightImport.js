@@ -43,7 +43,8 @@ function findAndHighlightImports(content, dependencies) {
             }
         }
     });
-
+    console.log("importRanges", importRanges);
+    console.log("importedItems", importedItems);
     return { importRanges, importedItems };
 }
 
