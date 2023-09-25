@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg?raw=true" alt="React Import Highlighter Logo" width="100">
   <h1>React Import Highlighter 🌟</h1>
+  <img src="https://github.com/Davidkramer1999/React-Import-Highlighter/blob/main/images/react-import-highlighter.jpg?raw=true" alt="React Import Highlighter Logo" width="100">
 </div>
 
 <div style="border: 2px solid #ccc; border-radius: 12px; padding: 10px; display: inline-block;">

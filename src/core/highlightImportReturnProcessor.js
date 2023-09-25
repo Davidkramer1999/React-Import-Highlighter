@@ -1,34 +1,42 @@
 const vscode = require('vscode');
 
-const { findAndHighlightReturn } = require('../classes/findAndHighlightReturn');
+const { findAndHighlightReturn } = require('../classes/FindHighlightReturn');
 const { findAndHighlightImports } = require('../classes/FindAndHighlightImport');
 const dependencyCache = require('../classes/DependencyCache');
 const { highlighterSettings } = require('../utils/highlighter');
 const { initializeHighlighter } = require('../utils/highlighter');
+const { findLineIndex } = require('../utils/findLineIndex');
 
 const highlightImportAndReturnInEditor = (activeEditor) => {
     if (!activeEditor) return;
 
     const dependencies = dependencyCache.getDependenciesFromPackageJson();
-
     if (!dependencies) return;
 
     const document = activeEditor.document;
     const content = document.getText();
 
-    const { importRanges, importedItems } = findAndHighlightImports(content, dependencies);
-    const { returnRanges, usedItems } = findAndHighlightReturn(content, importedItems);
+    const { importRanges, importedItems } = findAndHighlightImports(content, dependencies, vscode.Position,
+        vscode.Range,);
 
-    const initialFilteredRanges = importRanges.filter((range, index) => {
-        return usedItems.includes(importedItems[index]);
-    });
-    let initialCombinedRanges = [...initialFilteredRanges, ...returnRanges];
+    const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+        content,
+        importedItems,
+        vscode.Position,
+        vscode.Range,
+        findLineIndex,
+        importRanges,
+        importedItems
+    );
+
+    let initialCombinedRanges = [...filteredImportRanges, ...returnRanges];
 
     if (initialCombinedRanges.length !== 0) {
-        activeEditor.setDecorations(highlighterSettings.highlightDecorationType, initialCombinedRanges);  // Use the higher scope variable
+        activeEditor.setDecorations(highlighterSettings.highlightDecorationType, initialCombinedRanges);
     }
-
 };
+
+
 
 // onDidSaveTextDocument is triggered when a document is saved
 const handleDocumentSaveEvent = (document) => {
