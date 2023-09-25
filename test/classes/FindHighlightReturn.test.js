@@ -126,6 +126,53 @@ suite('FindAndHighlightReturn Test Suite', () => {
         assert.deepStrictEqual(filteredImportRanges, [1, 2, 3, 4, 5]);
     });
 
+    test('findAndHighlightReturn multiple items in one row', () => {
+        const content = `
+            import React, { useState } from "react";
+            import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+            import "./css/Search.css";
+            import { Button, Col, Row } from "reactstrap";
+            import DataTable from "react-data-table-component";
+
+            export default function DemoComponent() {
+                return (
+                  <div>
+      <Row>
+        <Col>
+          <span>
+            <FontAwesomeIcon icon="check-square" /> <Button>Click Me!</Button>
+            <Button>Click Me!</Button>
+          </span>
+        </Col>
+      </Row>
+      <DataTable columns={columns} data={data} />
+    </div>
+                );
+            }
+        `;
+
+        const dependencies = ['React', 'useState', 'faHeart', 'faSearch', 'Button', 'Col', 'Row', 'FontAwesomeIcon', 'DataTable']  // Adjusted dependencies to account for all tags and components
+        const importRanges = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        const importedItems = ['React', 'useState', 'faHeart', 'faSearch', 'Button', 'Col', 'Row', 'FontAwesomeIcon', 'DataTable']  // Simulating the imported items
+
+        const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
+            content,
+            dependencies,
+            MockPosition,
+            MockRange,
+            findLineIndex,
+            importRanges,
+            importedItems
+        );
+        console.log("filteredImportRanges", filteredImportRanges);
+        console.log("returnRanges: ", returnRanges);
+
+        assert.strictEqual(returnRanges.length, 10);  // 10 occurrences based on your manual testing
+        assert.strictEqual(filteredImportRanges.length, 5); // Assuming all imported items are used
+    });
+
+
+
 });
 
 

@@ -3,6 +3,7 @@ function findAndHighlightReturn(content, dependencies, positionCreator, rangeCre
     const returnRanges = [];
     const filteredImportRanges = [];
 
+
     dependencies.forEach((dependency) => {
         let ranges = findAllOccurrences(content, dependency, positionCreator, rangeCreator, findLineIndex);
         if (ranges.length > 0) {
