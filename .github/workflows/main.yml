@@ -16,16 +16,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "20" # adjust the version as needed
+          node-version: "20"
 
       - name: Install dependencies
         run: npm install
+
+      - name: Start Xvfb
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y xvfb
+          Xvfb :99 &
+        env:
+          DISPLAY: ":99"
+        if: runner.os == 'Linux'
 
       - name: Run ESLint
         run: npm run lint
 
       - name: Run Tests
         run: npm run test
+        env:
+          DISPLAY: ":99"
 
       - name: Bump version
         run: npm version patch
