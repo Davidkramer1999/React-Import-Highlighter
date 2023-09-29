@@ -35,12 +35,11 @@
 
 ## 🌈 Features
 
-- 🤖 Automatic detection of React libraries.
-- 🚀 Improved code navigation.
-- 🎨 Customizable highlight colors
-- 🖼 Customizable border and border-radius for highlights.
-- 📦 Specify the path to your `package.json` for more flexible project structures.
-- 🚫 Option to disable specific features entirely through a single setting.
+- 🤖 Auto-detects React libraries
+- 🚀 Enhanced code navigation
+- 🎨 Customizable highlight & border colors
+- 🖼 Option to disable border/highlight
+- 📦 Set custom package.json path
 
 ---
 

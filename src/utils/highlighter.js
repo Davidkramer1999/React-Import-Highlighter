@@ -4,13 +4,46 @@ const highlighterSettings = {
     highlightDecorationType: {}
 };
 
-const initializeHighlighter = () => {
-    const highlightColor = vscode.workspace.getConfiguration('reactImportHighlighter').get('highlightColor') || "rgba(220,220,220,.35)";
-    highlighterSettings.highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: highlightColor,
+const getHighlighterSettings = () => {
+    const config = vscode.workspace.getConfiguration('reactImportHighlighter');
+    const highlightColor = config.get('highlightColor');
+    const border = config.get('border');
+
+    const settings = {
         isWholeLine: false,
-    });
+        backgroundColor: highlightColor,
+        border: border,
+    };
+
+
+    if (highlightColor !== null) {
+        //highlightColor = background color
+        settings.backgroundColor = highlightColor;
+    }
+
+    if (border !== null && border !== "none") {
+        settings.border = border;
+    }
+
+    return settings;
+}
+
+
+const initializeHighlighter = () => {
+    console.log("initializeHighlighter",);
+    const settings = getHighlighterSettings();
+    console.log(settings, "settings");
+    highlighterSettings.highlightDecorationType = vscode.window.createTextEditorDecorationType(settings);
 };
+
+vscode.workspace.onDidChangeConfiguration((e) => {
+    console.log("onDidChangeConfiguration", e);
+    if (e.affectsConfiguration('reactImportHighlighter')) {
+        highlighterSettings.highlightDecorationType.dispose();
+        initializeHighlighter();
+    }
+});
+
 
 module.exports = {
     initializeHighlighter,
