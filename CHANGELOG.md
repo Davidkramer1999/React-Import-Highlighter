@@ -2,6 +2,23 @@
 
 All notable changes to the React Import Highlighter will be documented in this file.
 
+## [0.0.9] - 30.9-2023
+
+### Added
+
+- added option to customize styling ( highlightColor and border both can be disabled as well)
+- customize package.json path
+
+---
+
+## [0.0.8] - 26.9-2023
+
+### Added
+
+- Added tests and CI CD
+
+---
+
 ## [0.0.7] - 25.9-2023
 
 ### Added

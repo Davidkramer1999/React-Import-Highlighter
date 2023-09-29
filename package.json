@@ -30,10 +30,20 @@
     "configuration": {
       "title": "reactImportHighlighter",
       "properties": {
-        "reactImportHighlighter.highlightColor": {
+        "reactImportHighlighter.packageJsonPath": {
           "type": "string",
+          "default": "./package.json",
+          "description": "Specify the relative path to the package.json file."
+        },
+        "reactImportHighlighter.highlightColor": {
+          "type": "string | null",
           "default": "rgba(220,220,220,.35)",
-          "description": "Customize the highlight color for dependencies."
+          "description": "Customize the highlight color for dependencies. Set to 'none' or null to disable."
+        },
+        "reactImportHighlighter.border": {
+          "type": "string | null",
+          "default": "none",
+          "description": "Customize the border for dependencies."
         }
       }
     }
