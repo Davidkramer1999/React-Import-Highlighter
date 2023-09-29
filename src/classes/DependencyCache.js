@@ -3,11 +3,17 @@ const fs = require("fs");
 const path = require("path");
 const EventEmitter = require('events');
 
+const readJsonFile = filePath => JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+const fileExists = filePath => fs.existsSync(filePath);
+
+const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
 class DependencyCache extends EventEmitter {
     constructor() {
         super();
         this.initializer = null;
-        this.dependenciesCache = null;
+        this.dependenciesCache = {};
         this.isWatcherSet = false;
     }
 
@@ -15,41 +21,40 @@ class DependencyCache extends EventEmitter {
         this.initializer = initializer;
     }
 
+    getCustomPackageJsonPath() {
+        return vscode.workspace.getConfiguration("reactImportHighlighter").get("packageJsonPath");
+    }
+
+    getPackageJsonPath(rootPath, customPackageJsonPath) {
+        return customPackageJsonPath ? path.join(rootPath, customPackageJsonPath) : path.join(rootPath, "package.json");
+    }
+
+    updateDependenciesCache(packageJsonPath) {
+        if (fileExists(packageJsonPath)) {
+            const newDependencies = readJsonFile(packageJsonPath).dependencies ?? {};
+            if (!jsonEqual(newDependencies, this.dependenciesCache)) {
+                this.dependenciesCache = newDependencies;
+                this.emit('cacheUpdated');
+                this.initializer?.();
+            }
+        }
+    }
+
     getDependenciesFromPackageJson = () => {
         const { workspaceFolders } = vscode.workspace;
         const rootPath = workspaceFolders?.[0]?.uri.fsPath;
-        if (!rootPath) {
-            return this.dependenciesCache;
-        }
 
-        const packageJsonPath = path.join(rootPath, './package.json');
-        if (!fs.existsSync(packageJsonPath)) {
-            return this.dependenciesCache;
-        }
+        if (!rootPath) return Object.keys(this.dependenciesCache);
 
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-        this.dependenciesCache = packageJson.dependencies ?? {};
+        const packageJsonPath = this.getPackageJsonPath(rootPath, this.getCustomPackageJsonPath());
+
+        this.updateDependenciesCache(packageJsonPath);
 
         if (!this.isWatcherSet) {
-            fs.watchFile(packageJsonPath, () => {
-                const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-                const newDependencies = updatedPackageJson.dependencies ?? {};
-
-                if (JSON.stringify(newDependencies) !== JSON.stringify(this.dependenciesCache)) {
-                    // Trigger only when dependencies have changed
-                    this.dependenciesCache = newDependencies;
-                    this.emit('cacheUpdated');
-
-                    if (this.initializer) {
-                        this.initializer();
-                    }
-                } else {
-                    return
-                }
-            });
-
+            fs.watchFile(packageJsonPath, () => this.updateDependenciesCache(packageJsonPath));
             this.isWatcherSet = true;
         }
+
         return Object.keys(this.dependenciesCache);
     };
 }

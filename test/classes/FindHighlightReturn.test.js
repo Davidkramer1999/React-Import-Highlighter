@@ -164,8 +164,6 @@ suite('FindAndHighlightReturn Test Suite', () => {
             importRanges,
             importedItems
         );
-        console.log("filteredImportRanges", filteredImportRanges);
-        console.log("returnRanges: ", returnRanges);
 
         assert.strictEqual(returnRanges.length, 10);  // 10 occurrences based on your manual testing
         assert.strictEqual(filteredImportRanges.length, 5); // Assuming all imported items are used

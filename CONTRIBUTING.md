@@ -8,7 +8,9 @@ The following is a set of guidelines for contributing to React Import Highlighte
 
 - Fork this repository to your GitHub account.
 - Clone your forked repository to your local machine.
-- Open the project in Visual Studio Code.
+- Open the project in Visual Studio Code-(at least 1.81.0)
+- Npm install
+- To run extension start Debug mode in VS code (F5-windows)
 - Please make a new brach from DEVELOP branch.
 - Create a new branch for your feature or bugfix.
 - Make your changes and test them in the Visual Studio Code environment.
