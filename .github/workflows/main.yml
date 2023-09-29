@@ -43,6 +43,4 @@ jobs:
       # Conditional Publish
       - name: Publish
         if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'ubuntu-latest'
-        run: npm run deploy # Replace with your actual deploy script
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: vsce publish -p ${{ secrets.VSCE_TOKEN }}
