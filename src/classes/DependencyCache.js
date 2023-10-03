@@ -54,6 +54,8 @@ class DependencyCache extends EventEmitter {
             fs.watchFile(packageJsonPath, () => this.updateDependenciesCache(packageJsonPath));
             this.isWatcherSet = true;
         }
+        console.log(this.dependenciesCache, "this.dependenciesCache");
+        console.log(packageJsonPath, "packageJsonPath");
 
         return Object.keys(this.dependenciesCache);
     };
