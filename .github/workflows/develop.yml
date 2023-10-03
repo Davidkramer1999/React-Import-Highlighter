@@ -28,7 +28,7 @@ jobs:
         run: npm run lint # Make sure you have this script in your package.json
 
       - name: Run Tests on Linux
-        run: xvfb-run -a npm run test # This assumes you have xvfb installed in your test environment
+        run: xvfb-run -a npm run test
         if: runner.os == 'Linux'
 
       - name: Run Tests on macOS and Windows

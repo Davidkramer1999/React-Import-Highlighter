@@ -2,15 +2,16 @@ const vscode = require('vscode');
 
 const { findAndHighlightReturn } = require('../classes/FindHighlightReturn');
 const { findAndHighlightImports } = require('../classes/FindAndHighlightImport');
-const dependencyCache = require('../classes/DependencyCache');
-const { highlighterSettings } = require('../utils/highlighter');
 const { initializeHighlighter } = require('../utils/highlighter');
 const { findLineIndex } = require('../utils/findLineIndex');
+const dependencyCache = require('../classes/DependencyCache');
+const { highlighterSettings } = require('../utils/highlighter');
+
+const dependencies = dependencyCache.getDependenciesFromPackageJson();
 
 const highlightImportAndReturnInEditor = (activeEditor) => {
     if (!activeEditor) return;
 
-    const dependencies = dependencyCache.getDependenciesFromPackageJson();
     if (!dependencies) return;
 
     const document = activeEditor.document;
