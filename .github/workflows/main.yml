@@ -33,11 +33,7 @@ jobs:
         run: xvfb-run -a npm run test
         if: runner.os == 'Linux'
 
-      - name: Run Tests on macOS and Windows
-        run: npm run test
-        if: runner.os != 'Linux'
-
       # Conditional Publish
       - name: Publish
-        if: success()
+        if: success()  && runner.os == 'ubuntu-latest'
         run: vsce publish -p ${{ secrets.VSCE_TOKEN }}

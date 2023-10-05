@@ -2,6 +2,14 @@
 
 All notable changes to the React Import Highlighter will be documented in this file.
 
+## [0.0.10] - 03-10-2023
+
+### Added
+
+- Fixed to not to call every time dependencies when active editor changes
+
+---
+
 ## [0.0.9] - 30.9-2023
 
 ### Added
