@@ -3,7 +3,7 @@ name: CI/CD Pipeline for develop
 on:
   push:
     branches:
-      - develop # Set this to your development branch
+      - develop
 
 jobs:
   build:
@@ -19,13 +19,13 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Install Dependencies
         run: npm install
 
       - name: Run ESLint
-        run: npm run lint # Make sure you have this script in your package.json
+        run: npm run lint
 
       - name: Run Tests on Linux
         run: xvfb-run -a npm run test

@@ -3,7 +3,7 @@
   "displayName": "React Import Highlighter",
   "description": "Highlights components imported from dependencies",
   "publisher": "DavidKramer",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "icon": "./images/react-import-highlighter.jpg",
   "engines": {
     "vscode": "^1.81.0"
