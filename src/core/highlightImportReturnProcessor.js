@@ -18,8 +18,7 @@ const highlightImportAndReturnInEditor = (activeEditor) => {
     const content = document.getText();
 
     const { importRanges, importedItems } = findAndHighlightImports(content, dependencies, vscode.Position,
-        vscode.Range,);
-
+        vscode.Range);
     const { returnRanges, filteredImportRanges } = findAndHighlightReturn(
         content,
         importedItems,
