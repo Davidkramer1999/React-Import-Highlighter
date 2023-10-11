@@ -1,3 +1,5 @@
+const { generateRegex } = require('../utils/generateRegex');
+
 function findAndHighlightReturn(content, dependencies, positionCreator, rangeCreator, findLineIndex, importRanges, importedItems) {
     const usedItems = [];
     const returnRanges = [];
@@ -12,7 +14,6 @@ function findAndHighlightReturn(content, dependencies, positionCreator, rangeCre
         returnRanges.push(...ranges);
     });
 
-    // filter unused import if not used in return
     importRanges.forEach((range, index) => {
         if (usedItems.includes(importedItems[index])) {
             filteredImportRanges.push(range);
@@ -22,27 +23,43 @@ function findAndHighlightReturn(content, dependencies, positionCreator, rangeCre
     return { returnRanges: returnRanges, filteredImportRanges: filteredImportRanges };
 }
 
-// findAllOccurrences function
 function findAllOccurrences(content, tag, positionCreator, rangeCreator, findLineIndex) {
-    const regex = new RegExp(`<${tag}[^>]*>|<\/${tag}>`, 'g');
+    const regex = generateRegex(tag);
     let returnRanges = [];
+    let lineStartIndices = precalculateLineStartIndices(content);
 
     for (const match of content.matchAll(regex)) {
         let lineIndex = findLineIndex(content, match.index);
-        let lineContent = content.split("\n")[lineIndex];
 
+        let lineOffset = match.index - lineStartIndices[lineIndex];
         let skipCharacters = match[0].startsWith('</') ? 2 : 1;
-        let lineOffset = lineContent.indexOf(match[0]) + skipCharacters;
+        lineOffset += skipCharacters;
 
-        // Create new instances using the new keyword
-        let startPos = new positionCreator(lineIndex, lineOffset);
-        let endPos = new positionCreator(lineIndex, lineOffset + tag.length);
-
+        let { startPos, endPos } = createPositions(lineIndex, lineOffset, tag.length, positionCreator);
         returnRanges.push(new rangeCreator(startPos, endPos));
     }
 
     return returnRanges;
 }
+
+
+// findAllOccurrences function
+function precalculateLineStartIndices(content) {
+    let lineStartIndices = [0];
+    for (let i = 0; i < content.length; ++i) {
+        if (content[i] === '\n') {
+            lineStartIndices.push(i + 1);
+        }
+    }
+    return lineStartIndices;
+}
+
+function createPositions(lineIndex, lineOffset, tagLength, positionCreator) {
+    let startPos = new positionCreator(lineIndex, lineOffset);
+    let endPos = new positionCreator(lineIndex, lineOffset + tagLength);
+    return { startPos, endPos };
+}
+
 
 module.exports = {
     findAndHighlightReturn,
