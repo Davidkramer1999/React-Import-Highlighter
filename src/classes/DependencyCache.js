@@ -43,7 +43,7 @@ class DependencyCache extends EventEmitter {
     getDependenciesFromPackageJson = () => {
         const { workspaceFolders } = vscode.workspace;
         const rootPath = workspaceFolders?.[0]?.uri.fsPath;
-
+        console.log("rootPath", rootPath);
         if (!rootPath) return Object.keys(this.dependenciesCache);
 
         const packageJsonPath = this.getPackageJsonPath(rootPath, this.getCustomPackageJsonPath());

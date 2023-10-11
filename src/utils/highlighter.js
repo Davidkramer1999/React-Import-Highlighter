@@ -30,9 +30,7 @@ const getHighlighterSettings = () => {
 
 
 const initializeHighlighter = () => {
-    console.log("initializeHighlighter",);
     const settings = getHighlighterSettings();
-    console.log(settings, "settings");
     highlighterSettings.highlightDecorationType = vscode.window.createTextEditorDecorationType(settings);
 };
 
