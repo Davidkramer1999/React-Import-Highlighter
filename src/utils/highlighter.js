@@ -35,7 +35,6 @@ const initializeHighlighter = () => {
 };
 
 vscode.workspace.onDidChangeConfiguration((e) => {
-    console.log("onDidChangeConfiguration", e);
     if (e.affectsConfiguration('reactImportHighlighter')) {
         highlighterSettings.highlightDecorationType.dispose();
         initializeHighlighter();
